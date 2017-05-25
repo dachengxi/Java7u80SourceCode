@@ -140,6 +140,7 @@ public class IdentityHashMap<K,V>
      * MUST be a power of two.  The value 32 corresponds to the
      * (specified) expected maximum size of 21, given a load factor
      * of 2/3.
+     * 默认容量32
      */
     private static final int DEFAULT_CAPACITY = 32;
 
@@ -148,6 +149,7 @@ public class IdentityHashMap<K,V>
      * by either of the constructors with arguments.  The value 4 corresponds
      * to an expected maximum size of 2, given a load factor of 2/3.
      * MUST be a power of two.
+     * 最小容量
      */
     private static final int MINIMUM_CAPACITY = 4;
 
@@ -155,38 +157,44 @@ public class IdentityHashMap<K,V>
      * The maximum capacity, used if a higher value is implicitly specified
      * by either of the constructors with arguments.
      * MUST be a power of two <= 1<<29.
+     * 最大容量
      */
     private static final int MAXIMUM_CAPACITY = 1 << 29;
 
     /**
      * The table, resized as necessary. Length MUST always be a power of two.
+     * 用于存储数据的数组
      */
     private transient Object[] table;
 
     /**
      * The number of key-value mappings contained in this identity hash map.
-     *
+     * 大小，包含的键值映射个数
      * @serial
      */
     private int size;
 
     /**
      * The number of modifications, to support fast-fail iterators
+     * 结构修改次数，用来支持迭代器的fail-fast
      */
     private transient int modCount;
 
     /**
      * The next size value at which to resize (capacity * load factor).
+     * 扩容的阈值
      */
     private transient int threshold;
 
     /**
      * Value representing null keys inside tables.
+     * 如果key是null，用此来表示，不直接存储null的key
      */
     private static final Object NULL_KEY = new Object();
 
     /**
      * Use NULL_KEY for key if it is null.
+     * 如果key是null，使用NULL_KEY来代替
      */
     private static Object maskNull(Object key) {
         return (key == null ? NULL_KEY : key);
@@ -194,6 +202,7 @@ public class IdentityHashMap<K,V>
 
     /**
      * Returns internal representation of null key back to caller as null.
+     * NULL_KEY对应的返回null
      */
     private static Object unmaskNull(Object key) {
         return (key == NULL_KEY ? null : key);
@@ -202,6 +211,7 @@ public class IdentityHashMap<K,V>
     /**
      * Constructs a new, empty identity hash map with a default expected
      * maximum size (21).
+     * 使用默认容量构造
      */
     public IdentityHashMap() {
         init(DEFAULT_CAPACITY);
@@ -215,6 +225,7 @@ public class IdentityHashMap<K,V>
      *
      * @param expectedMaxSize the expected maximum size of the map
      * @throws IllegalArgumentException if <tt>expectedMaxSize</tt> is negative
+     * 使用指定的最大容量初始化
      */
     public IdentityHashMap(int expectedMaxSize) {
         if (expectedMaxSize < 0)
@@ -230,6 +241,7 @@ public class IdentityHashMap<K,V>
      * (3 * expectedMaxSize)/2, if such a number exists.  Otherwise
      * returns MAXIMUM_CAPACITY.  If (3 * expectedMaxSize)/2 is negative, it
      * is assumed that overflow has occurred, and MAXIMUM_CAPACITY is returned.
+     * 返回最小的窃大于expectedMaxSize的2次方的值
      */
     private int capacity(int expectedMaxSize) {
         // Compute min capacity for expectedMaxSize given a load factor of 2/3
@@ -251,6 +263,7 @@ public class IdentityHashMap<K,V>
      * Initializes object to be an empty map with the specified initial
      * capacity, which is assumed to be a power of two between
      * MINIMUM_CAPACITY and MAXIMUM_CAPACITY inclusive.
+     * 初始化数组
      */
     private void init(int initCapacity) {
         // assert (initCapacity & -initCapacity) == initCapacity; // power of 2
@@ -267,6 +280,7 @@ public class IdentityHashMap<K,V>
      *
      * @param m the map whose mappings are to be placed into this map
      * @throws NullPointerException if the specified map is null
+     * 使用指定的map构造
      */
     public IdentityHashMap(Map<? extends K, ? extends V> m) {
         // Allow for a bit of growth
@@ -278,6 +292,7 @@ public class IdentityHashMap<K,V>
      * Returns the number of key-value mappings in this identity hash map.
      *
      * @return the number of key-value mappings in this map
+     * 大小
      */
     public int size() {
         return size;
@@ -289,6 +304,7 @@ public class IdentityHashMap<K,V>
      *
      * @return <tt>true</tt> if this identity hash map contains no key-value
      *         mappings
+     * 是否为空
      */
     public boolean isEmpty() {
         return size == 0;
@@ -296,6 +312,8 @@ public class IdentityHashMap<K,V>
 
     /**
      * Returns index for Object x.
+     * 返回指定x的索引
+     * 元素散列值会在偶数次索引
      */
     private static int hash(Object x, int length) {
         int h = System.identityHashCode(x);
@@ -305,6 +323,7 @@ public class IdentityHashMap<K,V>
 
     /**
      * Circularly traverses table of size len.
+     * 下一个key的索引
      */
     private static int nextKeyIndex(int i, int len) {
         return (i + 2 < len ? i + 2 : 0);
@@ -326,11 +345,14 @@ public class IdentityHashMap<K,V>
      * distinguish these two cases.
      *
      * @see #put(Object, Object)
+     *
      */
     public V get(Object key) {
+        //如果为null转换成NULL_KEY
         Object k = maskNull(key);
         Object[] tab = table;
         int len = tab.length;
+        //获取key的索引
         int i = hash(k, len);
         while (true) {
             Object item = tab[i];
@@ -350,18 +372,24 @@ public class IdentityHashMap<K,V>
      * @return  <code>true</code> if the specified object reference is a key
      *          in this map
      * @see     #containsValue(Object)
+     * 是否包含指定的key
      */
     public boolean containsKey(Object key) {
+        //如果为null，null转换为NULL_KEY
         Object k = maskNull(key);
         Object[] tab = table;
         int len = tab.length;
+        //key的索引
         int i = hash(k, len);
         while (true) {
             Object item = tab[i];
+            //地址相等，但会true
             if (item == k)
                 return true;
+            //对应位置元素为空，返回false
             if (item == null)
                 return false;
+            //下一个key的索引
             i = nextKeyIndex(i, len);
         }
     }
@@ -374,9 +402,11 @@ public class IdentityHashMap<K,V>
      * @return <tt>true</tt> if this map maps one or more keys to the
      *         specified object reference
      * @see     #containsKey(Object)
+     * 是否包含指定的value
      */
     public boolean containsValue(Object value) {
         Object[] tab = table;
+        //元素散列值在偶数索引位置，所以这里是i+=2
         for (int i = 1; i < tab.length; i += 2)
             if (tab[i] == value && tab[i - 1] != null)
                 return true;
@@ -391,11 +421,14 @@ public class IdentityHashMap<K,V>
      * @param   value possible value
      * @return  <code>true</code> if and only if the specified key-value
      *          mapping is in the map
+     * 是否包含映射
      */
     private boolean containsMapping(Object key, Object value) {
+        //如果key为null，转换为NULL_KEY
         Object k = maskNull(key);
         Object[] tab = table;
         int len = tab.length;
+        //key的索引
         int i = hash(k, len);
         while (true) {
             Object item = tab[i];
@@ -421,15 +454,19 @@ public class IdentityHashMap<K,V>
      * @see     Object#equals(Object)
      * @see     #get(Object)
      * @see     #containsKey(Object)
+     * 指定的key和value放入map中
      */
     public V put(K key, V value) {
+        //如果key为null，转换为NULL_KEY
         Object k = maskNull(key);
         Object[] tab = table;
         int len = tab.length;
+        //计算key的索引位置
         int i = hash(k, len);
 
         Object item;
         while ( (item = tab[i]) != null) {
+            //地址相等，返回旧值
             if (item == k) {
                 V oldValue = (V) tab[i + 1];
                 tab[i + 1] = value;
@@ -437,10 +474,12 @@ public class IdentityHashMap<K,V>
             }
             i = nextKeyIndex(i, len);
         }
-
+        //修改加1
         modCount++;
+        //将key和value放进去
         tab[i] = k;
         tab[i + 1] = value;
+        //达到阈值，扩容
         if (++size >= threshold)
             resize(len); // len == 2 * current capacity.
         return null;
@@ -450,6 +489,7 @@ public class IdentityHashMap<K,V>
      * Resize the table to hold given capacity.
      *
      * @param newCapacity the new capacity, must be a power of two.
+     *  扩容
      */
     private void resize(int newCapacity) {
         // assert (newCapacity & -newCapacity) == newCapacity; // power of 2
@@ -468,7 +508,7 @@ public class IdentityHashMap<K,V>
 
         Object[] newTable = new Object[newLength];
         threshold = newLength / 3;
-
+    //循环，将旧表中的元蒜泥重新hash，放入新的表中
         for (int j = 0; j < oldLength; j += 2) {
             Object key = oldTable[j];
             if (key != null) {
@@ -492,6 +532,7 @@ public class IdentityHashMap<K,V>
      *
      * @param m mappings to be stored in this map
      * @throws NullPointerException if the specified map is null
+     * 指定的map放入当前map中
      */
     public void putAll(Map<? extends K, ? extends V> m) {
         int n = m.size();
@@ -512,6 +553,7 @@ public class IdentityHashMap<K,V>
      *         <tt>null</tt> if there was no mapping for <tt>key</tt>.
      *         (A <tt>null</tt> return can also indicate that the map
      *         previously associated <tt>null</tt> with <tt>key</tt>.)
+     *  移除指定的key
      */
     public V remove(Object key) {
         Object k = maskNull(key);
@@ -527,6 +569,7 @@ public class IdentityHashMap<K,V>
                 V oldValue = (V) tab[i + 1];
                 tab[i + 1] = null;
                 tab[i] = null;
+                //删除之后，将后面的元素移到前面来
                 closeDeletion(i);
                 return oldValue;
             }
@@ -544,6 +587,7 @@ public class IdentityHashMap<K,V>
      * @param   value possible value
      * @return  <code>true</code> if and only if the specified key-value
      *          mapping was in the map
+     *  移除映射
      */
     private boolean removeMapping(Object key, Object value) {
         Object k = maskNull(key);
@@ -560,6 +604,7 @@ public class IdentityHashMap<K,V>
                 size--;
                 tab[i] = null;
                 tab[i + 1] = null;
+                //删除之后，将后面的元素移到前面来
                 closeDeletion(i);
                 return true;
             }
@@ -575,6 +620,7 @@ public class IdentityHashMap<K,V>
      * collision properties required by get, put, etc.
      *
      * @param d the index of a newly empty deleted slot
+     *  将删除的元素后面元素往前面移动
      */
     private void closeDeletion(int d) {
         // Adapted from Knuth Section 6.4 Algorithm R
@@ -608,6 +654,7 @@ public class IdentityHashMap<K,V>
     /**
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
+     * 移除所有的映射
      */
     public void clear() {
         modCount++;
@@ -633,6 +680,7 @@ public class IdentityHashMap<K,V>
      * @param  o object to be compared for equality with this map
      * @return <tt>true</tt> if the specified object is equal to this map
      * @see Object#equals(Object)
+     * 比较相等
      */
     public boolean equals(Object o) {
         if (o == this) {
@@ -675,6 +723,7 @@ public class IdentityHashMap<K,V>
      * @return the hash code value for this map
      * @see Object#equals(Object)
      * @see #equals(Object)
+     * 计算hashCode
      */
     public int hashCode() {
         int result = 0;
@@ -695,6 +744,7 @@ public class IdentityHashMap<K,V>
      * themselves are not cloned.
      *
      * @return a shallow copy of this map
+     * 浅拷贝
      */
     public Object clone() {
         try {
