@@ -110,20 +110,24 @@ public class TreeMap<K,V>
     /**
      * The comparator used to maintain order in this tree map, or
      * null if it uses the natural ordering of its keys.
-     *
+     * 实现排序，如果为null的话是自然排序
      * @serial
      */
     private final Comparator<? super K> comparator;
 
+    //TreeMap基于红黑树实现，root就是红黑树的根节点
     private transient Entry<K,V> root = null;
 
     /**
      * The number of entries in the tree
+     * TreeMap中的entry个数
+     * 红黑树的节点总数
      */
     private transient int size = 0;
 
     /**
      * The number of structural modifications to the tree.
+     * 结构被修改的次数
      */
     private transient int modCount = 0;
 
@@ -138,6 +142,7 @@ public class TreeMap<K,V>
      * put a string key into a map whose keys are integers), the
      * {@code put(Object key, Object value)} call will throw a
      * {@code ClassCastException}.
+     * 构建一个TreeMap实例，按照自然排序
      */
     public TreeMap() {
         comparator = null;
@@ -152,7 +157,7 @@ public class TreeMap<K,V>
      * a key into the map that violates this constraint, the {@code put(Object
      * key, Object value)} call will throw a
      * {@code ClassCastException}.
-     *
+     * 构建一个TreeMap，排序规则需要自己实现
      * @param comparator the comparator that will be used to order this map.
      *        If {@code null}, the {@linkplain Comparable natural
      *        ordering} of the keys will be used.
@@ -169,7 +174,7 @@ public class TreeMap<K,V>
      * <em>mutually comparable</em>: {@code k1.compareTo(k2)} must not throw
      * a {@code ClassCastException} for any keys {@code k1} and
      * {@code k2} in the map.  This method runs in n*log(n) time.
-     *
+     * 使用指定的map构建一个TreeMap实例，自然排序
      * @param  m the map whose mappings are to be placed in this map
      * @throws ClassCastException if the keys in m are not {@link Comparable},
      *         or are not mutually comparable
@@ -184,7 +189,7 @@ public class TreeMap<K,V>
      * Constructs a new tree map containing the same mappings and
      * using the same ordering as the specified sorted map.  This
      * method runs in linear time.
-     *
+     * 使用给定的SortedMap进行构造，排序规则是SortedMap的顺序
      * @param  m the sorted map whose mappings are to be placed in this map,
      *         and whose comparator is to be used to sort this map
      * @throws NullPointerException if the specified map is null
@@ -241,6 +246,8 @@ public class TreeMap<K,V>
      * @since 1.2
      */
     public boolean containsValue(Object value) {
+        //getFirstEntry 返回红黑树中第一个节点
+        //successor获取节点e的后继节点
         for (Entry<K,V> e = getFirstEntry(); e != null; e = successor(e))
             if (valEquals(value, e.value))
                 return true;
@@ -280,13 +287,16 @@ public class TreeMap<K,V>
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
+     * 获取第一个节点对应的key
      */
     public K firstKey() {
+        //getFirstEntry获取红黑树的第一个节点
         return key(getFirstEntry());
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
+     * 获取最后一个节点对应的key
      */
     public K lastKey() {
         return key(getLastEntry());
@@ -303,11 +313,14 @@ public class TreeMap<K,V>
      * @throws NullPointerException if the specified map is null or
      *         the specified map contains a null key and this map does not
      *         permit null keys
+     *  将指定的map中的元素全部添加到TreeMap中
      */
     public void putAll(Map<? extends K, ? extends V> map) {
+        //map的大小
         int mapSize = map.size();
         if (size==0 && mapSize!=0 && map instanceof SortedMap) {
             Comparator c = ((SortedMap)map).comparator();
+            //comparator相等的话，map中元素全部拷贝到TreeMap中
             if (c == comparator || (c != null && c.equals(comparator))) {
                 ++modCount;
                 try {
@@ -319,6 +332,7 @@ public class TreeMap<K,V>
                 return;
             }
         }
+        //调用AbstractMap中的putAll方法，putAll中会调用TreesetMap的put方法
         super.putAll(map);
     }
 
@@ -333,21 +347,29 @@ public class TreeMap<K,V>
      * @throws NullPointerException if the specified key is null
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
+     *  根据key获取Entry(看不懂的话，先看二叉树和红黑树相关概念)
      */
     final Entry<K,V> getEntry(Object key) {
         // Offload comparator-based version for sake of performance
         if (comparator != null)
+            //使用定义的排序规则获取Entry
             return getEntryUsingComparator(key);
+        //key不能为null
         if (key == null)
             throw new NullPointerException();
         Comparable<? super K> k = (Comparable<? super K>) key;
+        //根节点
         Entry<K,V> p = root;
         while (p != null) {
+            //比较
             int cmp = k.compareTo(p.key);
+            //如果p.key小于指定的key，继续查找p的左孩子
             if (cmp < 0)
                 p = p.left;
+            //如果p.key大于指定的key，继续查找p的右孩子
             else if (cmp > 0)
                 p = p.right;
+            //p的key等于指定的key，就是要查找的Entry
             else
                 return p;
         }
@@ -359,11 +381,14 @@ public class TreeMap<K,V>
      * for performance. (This is not worth doing for most methods,
      * that are less dependent on comparator performance, but is
      * worthwhile here.)
+     * 使用了comparator，获取Entry
      */
     final Entry<K,V> getEntryUsingComparator(Object key) {
         K k = (K) key;
+        //比较器
         Comparator<? super K> cpr = comparator;
         if (cpr != null) {
+            //根节点
             Entry<K,V> p = root;
             while (p != null) {
                 int cmp = cpr.compare(k, p.key);
@@ -383,20 +408,30 @@ public class TreeMap<K,V>
      * exists, returns the entry for the least key greater than the specified
      * key; if no such entry exists (i.e., the greatest key in the Tree is less
      * than the specified key), returns {@code null}.
+     * 获取不小于指定key的最小节点
      */
     final Entry<K,V> getCeilingEntry(K key) {
+        //根节点
         Entry<K,V> p = root;
         while (p != null) {
             int cmp = compare(key, p.key);
+            //p.key大于指定的key
             if (cmp < 0) {
+                //p的左孩子存在
                 if (p.left != null)
+                    //继续查找p的左孩子
                     p = p.left;
                 else
+                    //p的左孩子不存在，就返回p
                     return p;
+                //p.key大于指定的key
             } else if (cmp > 0) {
+                //p的右孩子存在
                 if (p.right != null) {
+                    //继续查找p的右孩子
                     p = p.right;
                 } else {
+                    //p不存在右孩子
                     Entry<K,V> parent = p.parent;
                     Entry<K,V> ch = p;
                     while (parent != null && ch == parent.right) {
@@ -405,7 +440,7 @@ public class TreeMap<K,V>
                     }
                     return parent;
                 }
-            } else
+            } else //p.key==key
                 return p;
         }
         return null;
@@ -415,6 +450,7 @@ public class TreeMap<K,V>
      * Gets the entry corresponding to the specified key; if no such entry
      * exists, returns the entry for the greatest key less than the specified
      * key; if no such entry exists, returns {@code null}.
+     * 获取不大于指定key的最大结点
      */
     final Entry<K,V> getFloorEntry(K key) {
         Entry<K,V> p = root;
@@ -449,6 +485,7 @@ public class TreeMap<K,V>
      * key; if no such entry exists, returns the entry for the least
      * key greater than the specified key; if no such entry exists
      * returns {@code null}.
+     * 获取大于指定key的最小结点
      */
     final Entry<K,V> getHigherEntry(K key) {
         Entry<K,V> p = root;
@@ -480,6 +517,7 @@ public class TreeMap<K,V>
      * Returns the entry for the greatest key less than the specified key; if
      * no such entry exists (i.e., the least key in the Tree is greater than
      * the specified key), returns {@code null}.
+     * 获取小于指定key的最大结点
      */
     final Entry<K,V> getLowerEntry(K key) {
         Entry<K,V> p = root;
@@ -524,9 +562,12 @@ public class TreeMap<K,V>
      * @throws NullPointerException if the specified key is null
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
+     * 将指定的key，value添加到TreeMap中
      */
     public V put(K key, V value) {
+        //根结点
         Entry<K,V> t = root;
+        //红黑树为空，添加根结点
         if (t == null) {
             compare(key, key); // type (and possibly null) check
 
@@ -535,6 +576,7 @@ public class TreeMap<K,V>
             modCount++;
             return null;
         }
+        //下面是红黑树的插入
         int cmp;
         Entry<K,V> parent;
         // split comparator and comparable paths
@@ -571,6 +613,7 @@ public class TreeMap<K,V>
             parent.left = e;
         else
             parent.right = e;
+        //修复红黑树
         fixAfterInsertion(e);
         size++;
         modCount++;
@@ -590,6 +633,7 @@ public class TreeMap<K,V>
      * @throws NullPointerException if the specified key is null
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
+     * 删除结点，返回结点的值
      */
     public V remove(Object key) {
         Entry<K,V> p = getEntry(key);
@@ -604,6 +648,7 @@ public class TreeMap<K,V>
     /**
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
+     * 清空红黑树
      */
     public void clear() {
         modCount++;
@@ -616,6 +661,7 @@ public class TreeMap<K,V>
      * values themselves are not cloned.)
      *
      * @return a shallow copy of this map
+     * 浅克隆
      */
     public Object clone() {
         TreeMap<K,V> clone = null;
@@ -661,6 +707,7 @@ public class TreeMap<K,V>
 
     /**
      * @since 1.6
+     * 获取第一个结点，并将该节点删除
      */
     public Map.Entry<K,V> pollFirstEntry() {
         Entry<K,V> p = getFirstEntry();
@@ -672,6 +719,7 @@ public class TreeMap<K,V>
 
     /**
      * @since 1.6
+     * 获取最后一个结点，并将该结点删除
      */
     public Map.Entry<K,V> pollLastEntry() {
         Entry<K,V> p = getLastEntry();
@@ -687,6 +735,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      * @since 1.6
+     * 返回小于key的最大的键值对
      */
     public Map.Entry<K,V> lowerEntry(K key) {
         return exportEntry(getLowerEntry(key));
@@ -698,6 +747,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      * @since 1.6
+     * 返回小于key的最大key
      */
     public K lowerKey(K key) {
         return keyOrNull(getLowerEntry(key));
@@ -709,6 +759,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      * @since 1.6
+     * 返回不大于key的最大键值对
      */
     public Map.Entry<K,V> floorEntry(K key) {
         return exportEntry(getFloorEntry(key));
@@ -720,6 +771,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      * @since 1.6
+     * 返回不大于key的最大key
      */
     public K floorKey(K key) {
         return keyOrNull(getFloorEntry(key));
@@ -731,6 +783,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      * @since 1.6
+     * 返回不小于key的最小键值对
      */
     public Map.Entry<K,V> ceilingEntry(K key) {
         return exportEntry(getCeilingEntry(key));
@@ -742,6 +795,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      * @since 1.6
+     * 返回不小于key的最小key
      */
     public K ceilingKey(K key) {
         return keyOrNull(getCeilingEntry(key));
@@ -753,6 +807,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      * @since 1.6
+     * 返回大于key的最小键值对
      */
     public Map.Entry<K,V> higherEntry(K key) {
         return exportEntry(getHigherEntry(key));
@@ -764,6 +819,7 @@ public class TreeMap<K,V>
      *         and this map uses natural ordering, or its comparator
      *         does not permit null keys
      * @since 1.6
+     * 返回大于key的最小key
      */
     public K higherKey(K key) {
         return keyOrNull(getHigherEntry(key));
@@ -1887,12 +1943,12 @@ public class TreeMap<K,V>
      */
 
     static final class Entry<K,V> implements Map.Entry<K,V> {
-        K key;
-        V value;
-        Entry<K,V> left = null;
-        Entry<K,V> right = null;
-        Entry<K,V> parent;
-        boolean color = BLACK;
+        K key;//键
+        V value;//值
+        Entry<K,V> left = null;//左孩子
+        Entry<K,V> right = null;//右孩子
+        Entry<K,V> parent;//父节点
+        boolean color = BLACK;//颜色
 
         /**
          * Make a new cell with given key, value, and parent, and with
