@@ -134,6 +134,7 @@ public class WeakHashMap<K,V>
 
     /**
      * The default initial capacity -- MUST be a power of two.
+     * 默认初始容量
      */
     private static final int DEFAULT_INITIAL_CAPACITY = 16;
 
@@ -141,36 +142,43 @@ public class WeakHashMap<K,V>
      * The maximum capacity, used if a higher value is implicitly specified
      * by either of the constructors with arguments.
      * MUST be a power of two <= 1<<30.
+     * 最大容量
      */
     private static final int MAXIMUM_CAPACITY = 1 << 30;
 
     /**
      * The load factor used when none specified in constructor.
+     * 默认负载因子
      */
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
     /**
      * The table, resized as necessary. Length MUST Always be a power of two.
+     * 存放数据的数组
      */
     Entry<K,V>[] table;
 
     /**
      * The number of key-value mappings contained in this weak hash map.
+     * 大小
      */
     private int size;
 
     /**
      * The next size value at which to resize (capacity * load factor).
+     * 扩容的阈值
      */
     private int threshold;
 
     /**
      * The load factor for the hash table.
+     * 负载因子
      */
     private final float loadFactor;
 
     /**
      * Reference queue for cleared WeakEntries
+     * 引用队列，当弱引用所引用的对象被垃圾回收的时候，虚拟机会把这个弱引用加入到与之关联的引用队列中。
      */
     private final ReferenceQueue<Object> queue = new ReferenceQueue<>();
 
@@ -182,6 +190,7 @@ public class WeakHashMap<K,V>
      * Collection-views of the map fail-fast.
      *
      * @see ConcurrentModificationException
+     * 结构修改的次数
      */
     int modCount;
 
@@ -194,11 +203,13 @@ public class WeakHashMap<K,V>
      * {@code jdk.map.althashing.threshold}. A property value of {@code 1}
      * forces alternative hashing to be used at all times whereas
      * {@code -1} value ensures that alternative hashing is never used.
+     * 默认阈值
      */
     static final int ALTERNATIVE_HASHING_THRESHOLD_DEFAULT = Integer.MAX_VALUE;
 
     /**
      * holds values which can't be initialized until after VM is booted.
+     * 静态内部类，存放一些只能在虚拟机启动之后才能初始化的值
      */
     private static class Holder {
 
@@ -319,6 +330,7 @@ public class WeakHashMap<K,V>
 
     /**
      * Value representing null keys inside tables.
+     * 代替null键
      */
     private static final Object NULL_KEY = new Object();
 
@@ -381,18 +393,24 @@ public class WeakHashMap<K,V>
 
     /**
      * Expunges stale entries from the table.
+     * 清除无用的键值对
+     * 将引用队列中的对象引用，在table中都删除
      */
     private void expungeStaleEntries() {
+        //遍历队列
         for (Object x; (x = queue.poll()) != null; ) {
             synchronized (queue) {
+                //队列中的Entry
                 @SuppressWarnings("unchecked")
                     Entry<K,V> e = (Entry<K,V>) x;
+                //Entry在table中的索引
                 int i = indexFor(e.hash, table.length);
-
+                //table中的Entry
                 Entry<K,V> prev = table[i];
                 Entry<K,V> p = prev;
                 while (p != null) {
                     Entry<K,V> next = p.next;
+                    //队列中和table中的Entry相同
                     if (p == e) {
                         if (prev == e)
                             table[i] = next;
@@ -413,6 +431,7 @@ public class WeakHashMap<K,V>
 
     /**
      * Returns the table after first expunging stale entries.
+     * 先删除无用的键值对，在返回table
      */
     private Entry<K,V>[] getTable() {
         expungeStaleEntries();
@@ -424,6 +443,7 @@ public class WeakHashMap<K,V>
      * This result is a snapshot, and may not reflect unprocessed
      * entries that will be removed before next attempted access
      * because they are no longer referenced.
+     * 先删除无用的的键值对，再返回size
      */
     public int size() {
         if (size == 0)
@@ -458,10 +478,12 @@ public class WeakHashMap<K,V>
      * distinguish these two cases.
      *
      * @see #put(Object, Object)
+     * 根据指定的key获取value
      */
     public V get(Object key) {
         Object k = maskNull(key);
         int h = hash(k);
+        //此处getTable会先清除无用的键值
         Entry<K,V>[] tab = getTable();
         int index = indexFor(h, tab.length);
         Entry<K,V> e = tab[index];
@@ -479,7 +501,8 @@ public class WeakHashMap<K,V>
      *
      * @param  key   The key whose presence in this map is to be tested
      * @return <tt>true</tt> if there is a mapping for <tt>key</tt>;
-     *         <tt>false</tt> otherwise
+     *         <tt>false</tt> otherwise】
+     * 是否包含key
      */
     public boolean containsKey(Object key) {
         return getEntry(key) != null;
@@ -492,6 +515,7 @@ public class WeakHashMap<K,V>
     Entry<K,V> getEntry(Object key) {
         Object k = maskNull(key);
         int h = hash(k);
+        //获取之前先清除无用键值
         Entry<K,V>[] tab = getTable();
         int index = indexFor(h, tab.length);
         Entry<K,V> e = tab[index];
@@ -515,6 +539,7 @@ public class WeakHashMap<K,V>
     public V put(K key, V value) {
         Object k = maskNull(key);
         int h = hash(k);
+        //获取table之前先清除无用键值
         Entry<K,V>[] tab = getTable();
         int i = indexFor(h, tab.length);
 
@@ -548,6 +573,7 @@ public class WeakHashMap<K,V>
      *        must be greater than current capacity unless current
      *        capacity is MAXIMUM_CAPACITY (in which case value
      *        is irrelevant).
+     * 扩容
      */
     void resize(int newCapacity) {
         Entry<K,V>[] oldTable = getTable();
@@ -720,6 +746,7 @@ public class WeakHashMap<K,V>
     /**
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
+     * 清空table，前后都需要将队列清空
      */
     public void clear() {
         // clear out ref queue. We don't need to expunge entries
@@ -773,6 +800,7 @@ public class WeakHashMap<K,V>
     /**
      * The entries in this hash table extend WeakReference, using its main ref
      * field as the key.
+     * Entry继承了WeakReference
      */
     private static class Entry<K,V> extends WeakReference<Object> implements Map.Entry<K,V> {
         V value;
