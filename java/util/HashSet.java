@@ -156,6 +156,7 @@ public class HashSet<E>
      *             constructor from other int, float constructor.)
      * @throws     IllegalArgumentException if the initial capacity is less
      *             than zero, or if the load factor is nonpositive
+     *  LinkedHashSet继承了HashSet，LinkedHashSet构造实际用的是此构造，内部是LinkedHashMap存放数据
      */
     HashSet(int initialCapacity, float loadFactor, boolean dummy) {
         map = new LinkedHashMap<>(initialCapacity, loadFactor);

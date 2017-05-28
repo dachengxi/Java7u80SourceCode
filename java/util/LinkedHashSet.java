@@ -129,6 +129,7 @@ public class LinkedHashSet<E>
      * @param      loadFactor      the load factor of the linked hash set
      * @throws     IllegalArgumentException  if the initial capacity is less
      *               than zero, or if the load factor is nonpositive
+     *  构造方法，内部以LinkedHashMap来存储数据
      */
     public LinkedHashSet(int initialCapacity, float loadFactor) {
         super(initialCapacity, loadFactor, true);
@@ -141,6 +142,7 @@ public class LinkedHashSet<E>
      * @param   initialCapacity   the initial capacity of the LinkedHashSet
      * @throws  IllegalArgumentException if the initial capacity is less
      *              than zero
+     *  构造方法，内部以LinkedHashMap存储数据
      */
     public LinkedHashSet(int initialCapacity) {
         super(initialCapacity, .75f, true);
