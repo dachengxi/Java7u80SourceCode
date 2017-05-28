@@ -84,7 +84,7 @@ public class CopyOnWriteArrayList<E>
     transient final ReentrantLock lock = new ReentrantLock();
 
     /** The array, accessed only via getArray/setArray. */
-    //存储元素的数组
+    //存储元素的数组，volatile类型，保证可见性
     private volatile transient Object[] array;
 
     /**
