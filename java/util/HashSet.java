@@ -89,15 +89,17 @@ public class HashSet<E>
     implements Set<E>, Cloneable, java.io.Serializable
 {
     static final long serialVersionUID = -5024744406713321676L;
-
+    //HashSet内部其实是用HashMap来存储数据的
     private transient HashMap<E,Object> map;
 
     // Dummy value to associate with an Object in the backing Map
+    //HashSet内部以HashMap来存储数据，key是数据，value就使用一个PRESENT来占用，无实际意义
     private static final Object PRESENT = new Object();
 
     /**
      * Constructs a new, empty set; the backing <tt>HashMap</tt> instance has
      * default initial capacity (16) and load factor (0.75).
+     * 默认是一个空的HashMap，容量16，负载因子0.75
      */
     public HashSet() {
         map = new HashMap<>();
@@ -174,6 +176,7 @@ public class HashSet<E>
      * Returns the number of elements in this set (its cardinality).
      *
      * @return the number of elements in this set (its cardinality)
+     * 大小
      */
     public int size() {
         return map.size();
@@ -183,6 +186,7 @@ public class HashSet<E>
      * Returns <tt>true</tt> if this set contains no elements.
      *
      * @return <tt>true</tt> if this set contains no elements
+     * 是否为空
      */
     public boolean isEmpty() {
         return map.isEmpty();
@@ -196,6 +200,7 @@ public class HashSet<E>
      *
      * @param o element whose presence in this set is to be tested
      * @return <tt>true</tt> if this set contains the specified element
+     * 是否包含元素，就是使用HashMap的containsKey来判断
      */
     public boolean contains(Object o) {
         return map.containsKey(o);
@@ -212,6 +217,7 @@ public class HashSet<E>
      * @param e element to be added to this set
      * @return <tt>true</tt> if this set did not already contain the specified
      * element
+     * 添加一个元素，调用HashMap的put方法
      */
     public boolean add(E e) {
         return map.put(e, PRESENT)==null;
@@ -228,6 +234,7 @@ public class HashSet<E>
      *
      * @param o object to be removed from this set, if present
      * @return <tt>true</tt> if the set contained the specified element
+     * 移除一个元素
      */
     public boolean remove(Object o) {
         return map.remove(o)==PRESENT;
@@ -236,6 +243,7 @@ public class HashSet<E>
     /**
      * Removes all of the elements from this set.
      * The set will be empty after this call returns.
+     * 清空
      */
     public void clear() {
         map.clear();
@@ -246,6 +254,7 @@ public class HashSet<E>
      * themselves are not cloned.
      *
      * @return a shallow copy of this set
+     * 浅克隆
      */
     public Object clone() {
         try {
