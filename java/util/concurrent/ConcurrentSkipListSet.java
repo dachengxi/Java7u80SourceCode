@@ -92,12 +92,14 @@ public class ConcurrentSkipListSet<E>
      * The underlying map. Uses Boolean.TRUE as value for each
      * element.  This field is declared final for the sake of thread
      * safety, which entails some ugliness in clone()
+     * 底层的map，value使用true填充
      */
     private final ConcurrentNavigableMap<E,Object> m;
 
     /**
      * Constructs a new, empty set that orders its elements according to
      * their {@linkplain Comparable natural ordering}.
+     * 底层使用ConcurrentSkipListMap
      */
     public ConcurrentSkipListSet() {
         m = new ConcurrentSkipListMap<E,Object>();
@@ -110,6 +112,7 @@ public class ConcurrentSkipListSet<E>
      * @param comparator the comparator that will be used to order this set.
      *        If <tt>null</tt>, the {@linkplain Comparable natural
      *        ordering} of the elements will be used.
+     * 指定comparator
      */
     public ConcurrentSkipListSet(Comparator<? super E> comparator) {
         m = new ConcurrentSkipListMap<E,Object>(comparator);
@@ -125,6 +128,7 @@ public class ConcurrentSkipListSet<E>
      *         not {@link Comparable}, or are not mutually comparable
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
+     *  指定集合
      */
     public ConcurrentSkipListSet(Collection<? extends E> c) {
         m = new ConcurrentSkipListMap<E,Object>();
@@ -186,6 +190,7 @@ public class ConcurrentSkipListSet<E>
      * useful in concurrent applications.
      *
      * @return the number of elements in this set
+     * 大小，是调用ConcurrentSkipListMap的size
      */
     public int size() {
         return m.size();
@@ -194,6 +199,7 @@ public class ConcurrentSkipListSet<E>
     /**
      * Returns <tt>true</tt> if this set contains no elements.
      * @return <tt>true</tt> if this set contains no elements
+     * 是否为空
      */
     public boolean isEmpty() {
         return m.isEmpty();
@@ -209,6 +215,7 @@ public class ConcurrentSkipListSet<E>
      * @throws ClassCastException if the specified element cannot be
      *         compared with the elements currently in this set
      * @throws NullPointerException if the specified element is null
+     * 是否包含指定的key
      */
     public boolean contains(Object o) {
         return m.containsKey(o);
@@ -227,6 +234,7 @@ public class ConcurrentSkipListSet<E>
      * @throws ClassCastException if <tt>e</tt> cannot be compared
      *         with the elements currently in this set
      * @throws NullPointerException if the specified element is null
+     * 添加元素
      */
     public boolean add(E e) {
         return m.putIfAbsent(e, Boolean.TRUE) == null;
@@ -245,6 +253,7 @@ public class ConcurrentSkipListSet<E>
      * @throws ClassCastException if <tt>o</tt> cannot be compared
      *         with the elements currently in this set
      * @throws NullPointerException if the specified element is null
+     * 删除元素
      */
     public boolean remove(Object o) {
         return m.remove(o, Boolean.TRUE);
@@ -252,6 +261,7 @@ public class ConcurrentSkipListSet<E>
 
     /**
      * Removes all of the elements from this set.
+     * 清空
      */
     public void clear() {
         m.clear();
