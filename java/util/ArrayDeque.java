@@ -92,6 +92,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * thus avoiding head and tail wrapping around to equal each
      * other.  We also guarantee that all array cells not holding
      * deque elements are always null.
+     * 存放数据的数组
      */
     private transient E[] elements;
 
@@ -99,18 +100,21 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * The index of the element at the head of the deque (which is the
      * element that would be removed by remove() or pop()); or an
      * arbitrary number equal to tail if the deque is empty.
+     * 双端队列的头
      */
     private transient int head;
 
     /**
      * The index at which the next element would be added to the tail
      * of the deque (via addLast(E), add(E), or push(E)).
+     * 双端队列的尾
      */
     private transient int tail;
 
     /**
      * The minimum capacity that we'll use for a newly created deque.
      * Must be a power of 2.
+     * 默认最小初始容量
      */
     private static final int MIN_INITIAL_CAPACITY = 8;
 
@@ -181,6 +185,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     /**
      * Constructs an empty array deque with an initial capacity
      * sufficient to hold 16 elements.
+     * 默认16
      */
     public ArrayDeque() {
         elements = (E[]) new Object[16];
@@ -220,6 +225,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      *
      * @param e the element to add
      * @throws NullPointerException if the specified element is null
+     * 向头部添加元素
      */
     public void addFirst(E e) {
         if (e == null)
@@ -236,6 +242,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      *
      * @param e the element to add
      * @throws NullPointerException if the specified element is null
+     * 向队尾添加元素
      */
     public void addLast(E e) {
         if (e == null)
@@ -251,6 +258,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * @param e the element to add
      * @return <tt>true</tt> (as specified by {@link Deque#offerFirst})
      * @throws NullPointerException if the specified element is null
+     * 向队头添加元素
      */
     public boolean offerFirst(E e) {
         addFirst(e);
@@ -263,6 +271,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * @param e the element to add
      * @return <tt>true</tt> (as specified by {@link Deque#offerLast})
      * @throws NullPointerException if the specified element is null
+     * 向队尾添加元素
      */
     public boolean offerLast(E e) {
         addLast(e);
@@ -271,6 +280,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
+     * 删除队头
      */
     public E removeFirst() {
         E x = pollFirst();
@@ -281,6 +291,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
+     * 删除队尾
      */
     public E removeLast() {
         E x = pollLast();
@@ -289,6 +300,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         return x;
     }
 
+    /**
+     * 删除队头
+     * @return
+     */
     public E pollFirst() {
         int h = head;
         E result = elements[h]; // Element is null if deque empty
@@ -299,6 +314,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         return result;
     }
 
+    /**
+     * 删除队尾
+     * @return
+     */
     public E pollLast() {
         int t = (tail - 1) & (elements.length - 1);
         E result = elements[t];
@@ -311,6 +330,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
+     * 获取队头
      */
     public E getFirst() {
         E x = elements[head];
@@ -321,6 +341,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
+     * 获取队尾
      */
     public E getLast() {
         E x = elements[(tail - 1) & (elements.length - 1)];
@@ -329,10 +350,18 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         return x;
     }
 
+    /**
+     * 获取队头
+     * @return
+     */
     public E peekFirst() {
         return elements[head]; // elements[head] is null if deque empty
     }
 
+    /**
+     * 获取队尾
+     * @return
+     */
     public E peekLast() {
         return elements[(tail - 1) & (elements.length - 1)];
     }
@@ -348,8 +377,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      *
      * @param o element to be removed from this deque, if present
      * @return <tt>true</tt> if the deque contained the specified element
+     * 删除第一个出现的元素
      */
     public boolean removeFirstOccurrence(Object o) {
+        //o不能为null，队列中不存在null元素
         if (o == null)
             return false;
         int mask = elements.length - 1;
@@ -357,6 +388,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         E x;
         while ( (x = elements[i]) != null) {
             if (o.equals(x)) {
+                //删除
                 delete(i);
                 return true;
             }
@@ -376,6 +408,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      *
      * @param o element to be removed from this deque, if present
      * @return <tt>true</tt> if the deque contained the specified element
+     * 获取最后一个出现的元素
      */
     public boolean removeLastOccurrence(Object o) {
         if (o == null)
@@ -403,6 +436,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * @param e the element to add
      * @return <tt>true</tt> (as specified by {@link Collection#add})
      * @throws NullPointerException if the specified element is null
+     * 添加到队尾
      */
     public boolean add(E e) {
         addLast(e);
@@ -417,6 +451,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * @param e the element to add
      * @return <tt>true</tt> (as specified by {@link Queue#offer})
      * @throws NullPointerException if the specified element is null
+     * 添加到队尾
      */
     public boolean offer(E e) {
         return offerLast(e);
@@ -432,6 +467,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      *
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException {@inheritDoc}
+     * 删除队头
      */
     public E remove() {
         return removeFirst();
@@ -446,6 +482,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      *
      * @return the head of the queue represented by this deque, or
      *         <tt>null</tt> if this deque is empty
+     *  获取并删除队头
      */
     public E poll() {
         return pollFirst();
@@ -460,6 +497,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      *
      * @return the head of the queue represented by this deque
      * @throws NoSuchElementException {@inheritDoc}
+     * 获取队头
      */
     public E element() {
         return getFirst();
@@ -473,6 +511,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      *
      * @return the head of the queue represented by this deque, or
      *         <tt>null</tt> if this deque is empty
+     *  获取队头，不删除
      */
     public E peek() {
         return peekFirst();
@@ -488,6 +527,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      *
      * @param e the element to push
      * @throws NullPointerException if the specified element is null
+     * 添加到队头
      */
     public void push(E e) {
         addFirst(e);
@@ -502,6 +542,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * @return the element at the front of this deque (which is the top
      *         of the stack represented by this deque)
      * @throws NoSuchElementException {@inheritDoc}
+     * 出栈操作，获取队头并删除
      */
     public E pop() {
         return removeFirst();
@@ -524,6 +565,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * that its semantics differ from those of {@link List#remove(int)}.
      *
      * @return true if elements moved backwards
+     * 删除指定位置的元素
      */
     private boolean delete(int i) {
         checkInvariants();
