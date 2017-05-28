@@ -90,6 +90,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
         implements java.io.Serializable {
     private static final long serialVersionUID = 5457747651344034263L;
 
+    //底层基于CopyOnWriteArrayList实现
     private final CopyOnWriteArrayList<E> al;
 
     /**
@@ -115,6 +116,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * Returns the number of elements in this set.
      *
      * @return the number of elements in this set
+     * 大小
      */
     public int size() {
         return al.size();
@@ -124,6 +126,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * Returns <tt>true</tt> if this set contains no elements.
      *
      * @return <tt>true</tt> if this set contains no elements
+     * 是否为空
      */
     public boolean isEmpty() {
         return al.isEmpty();
@@ -137,6 +140,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      *
      * @param o element whose presence in this set is to be tested
      * @return <tt>true</tt> if this set contains the specified element
+     * 是否包含某个元素
      */
     public boolean contains(Object o) {
         return al.contains(o);
@@ -243,6 +247,7 @@ public class CopyOnWriteArraySet<E> extends AbstractSet<E>
      * @param e element to be added to this set
      * @return <tt>true</tt> if this set did not already contain the specified
      *         element
+     *  添加元素，主要是使用addIfAbsent方法，保证每次添加的都不存在
      */
     public boolean add(E e) {
         return al.addIfAbsent(e);
