@@ -59,6 +59,10 @@ import java.nio.LongBuffer;
  * @author  Michael McCloskey
  * @author  Martin Buchholz
  * @since   JDK1.0
+ *
+ * 需要对海量数据进行统计的时候可以使用
+ *
+ * 比如 有1千万个随机数，随机数的范围在1到1亿之间。现在要求写出一种算法，将1到1亿之间没有在随机数中的数求出来
  */
 public class BitSet implements Cloneable, java.io.Serializable {
     /*
@@ -66,6 +70,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      * a long, which consists of 64 bits, requiring 6 address bits.
      * The choice of word size is determined purely by performance concerns.
      */
+    //long是64bit，2的6次方=64，表示64个值需要6个地址线
     private final static int ADDRESS_BITS_PER_WORD = 6;
     private final static int BITS_PER_WORD = 1 << ADDRESS_BITS_PER_WORD;
     private final static int BIT_INDEX_MASK = BITS_PER_WORD - 1;
