@@ -94,10 +94,12 @@ public class TreeSet<E> extends AbstractSet<E>
 {
     /**
      * The backing map.
+     * 其实内部存储数据使用的是TreeMap，构造中有体现
      */
     private transient NavigableMap<E,Object> m;
 
     // Dummy value to associate with an Object in the backing Map
+    //TreeMap中填充值的对象
     private static final Object PRESENT = new Object();
 
     /**
@@ -119,6 +121,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * attempts to add a string element to a set whose elements are
      * integers), the {@code add} call will throw a
      * {@code ClassCastException}.
+     * 内部使用TreeMap存放数据
      */
     public TreeSet() {
         this(new TreeMap<E,Object>());
@@ -202,6 +205,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * Returns the number of elements in this set (its cardinality).
      *
      * @return the number of elements in this set (its cardinality)
+     * 大小
      */
     public int size() {
         return m.size();
@@ -211,6 +215,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * Returns {@code true} if this set contains no elements.
      *
      * @return {@code true} if this set contains no elements
+     * 是否为空
      */
     public boolean isEmpty() {
         return m.isEmpty();
@@ -229,6 +234,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws NullPointerException if the specified element is null
      *         and this set uses natural ordering, or its comparator
      *         does not permit null elements
+     *  是否包含指定的对象
      */
     public boolean contains(Object o) {
         return m.containsKey(o);
@@ -250,6 +256,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws NullPointerException if the specified element is null
      *         and this set uses natural ordering, or its comparator
      *         does not permit null elements
+     *  添加元素
      */
     public boolean add(E e) {
         return m.put(e, PRESENT)==null;
@@ -271,6 +278,7 @@ public class TreeSet<E> extends AbstractSet<E>
      * @throws NullPointerException if the specified element is null
      *         and this set uses natural ordering, or its comparator
      *         does not permit null elements
+     *  移除元素
      */
     public boolean remove(Object o) {
         return m.remove(o)==PRESENT;
@@ -279,6 +287,7 @@ public class TreeSet<E> extends AbstractSet<E>
     /**
      * Removes all of the elements from this set.
      * The set will be empty after this call returns.
+     * 清空
      */
     public void clear() {
         m.clear();
@@ -409,6 +418,7 @@ public class TreeSet<E> extends AbstractSet<E>
      *         and this set uses natural ordering, or its comparator
      *         does not permit null elements
      * @since 1.6
+     * lower、floor、ceiling 和 higher 分别返回小于、小于等于、大于等于、大于给定元素的元素，如果不存在这样的元素，则返回 null。
      */
     public E lower(E e) {
         return m.lowerKey(e);
