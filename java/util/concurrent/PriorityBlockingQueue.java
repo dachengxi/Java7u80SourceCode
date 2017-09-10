@@ -117,6 +117,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
 
     /**
      * Default array capacity.
+     * 默认初始容量
      */
     private static final int DEFAULT_INITIAL_CAPACITY = 11;
 
@@ -125,6 +126,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      * Some VMs reserve some header words in an array.
      * Attempts to allocate larger arrays may result in
      * OutOfMemoryError: Requested array size exceeds VM limit
+     * 最大的数组大小
      */
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
@@ -135,32 +137,38 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      * natural ordering, if comparator is null: For each node n in the
      * heap and each descendant d of n, n <= d.  The element with the
      * lowest value is in queue[0], assuming the queue is nonempty.
+     * 队列，基于数组实现
      */
     private transient Object[] queue;
 
     /**
      * The number of elements in the priority queue.
+     * 队列大小
      */
     private transient int size;
 
     /**
      * The comparator, or null if priority queue uses elements'
      * natural ordering.
+     * 比较器，默认使用自然顺序
      */
     private transient Comparator<? super E> comparator;
 
     /**
      * Lock used for all public operations
+     * 锁
      */
     private final ReentrantLock lock;
 
     /**
      * Condition for blocking when empty
+     * 不为空的条件
      */
     private final Condition notEmpty;
 
     /**
      * Spinlock for allocation, acquired via CAS.
+     * 自旋锁
      */
     private transient volatile int allocationSpinLock;
 
@@ -175,6 +183,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      * Creates a {@code PriorityBlockingQueue} with the default
      * initial capacity (11) that orders its elements according to
      * their {@linkplain Comparable natural ordering}.
+     * 构造，默认初始容量，自然排序
      */
     public PriorityBlockingQueue() {
         this(DEFAULT_INITIAL_CAPACITY, null);
@@ -188,6 +197,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      * @param initialCapacity the initial capacity for this priority queue
      * @throws IllegalArgumentException if {@code initialCapacity} is less
      *         than 1
+     *  指定初始容量
      */
     public PriorityBlockingQueue(int initialCapacity) {
         this(initialCapacity, null);
@@ -204,14 +214,19 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      *         natural ordering} of the elements will be used.
      * @throws IllegalArgumentException if {@code initialCapacity} is less
      *         than 1
+     * 指定初始容量和比较器
      */
     public PriorityBlockingQueue(int initialCapacity,
                                  Comparator<? super E> comparator) {
         if (initialCapacity < 1)
             throw new IllegalArgumentException();
+        //锁
         this.lock = new ReentrantLock();
+        //非空条件
         this.notEmpty = lock.newCondition();
+        //比较器
         this.comparator = comparator;
+        //存放数据的数组
         this.queue = new Object[initialCapacity];
     }
 
@@ -230,9 +245,12 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      *         queue's ordering
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
+     * 通过集合构造队列
      */
     public PriorityBlockingQueue(Collection<? extends E> c) {
+        //锁
         this.lock = new ReentrantLock();
+        //非空条件
         this.notEmpty = lock.newCondition();
         boolean heapify = true; // true if not known to be in heap order
         boolean screen = true;  // true if must screen for nulls

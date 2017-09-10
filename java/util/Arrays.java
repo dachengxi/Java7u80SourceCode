@@ -2229,9 +2229,9 @@ public class Arrays {
      * is greater than that of the original array.
      * The resulting array is of the class <tt>newType</tt>.
      *
-     * @param original the array to be copied
-     * @param newLength the length of the copy to be returned
-     * @param newType the class of the copy to be returned
+     * @param original the array to be copied 要复制的数组
+     * @param newLength the length of the copy to be returned 要返回的新数组的长度
+     * @param newType the class of the copy to be returned 要返回的新数组的类型
      * @return a copy of the original array, truncated or padded with nulls
      *     to obtain the specified length
      * @throws NegativeArraySizeException if <tt>newLength</tt> is negative
@@ -2240,11 +2240,14 @@ public class Arrays {
      *     <tt>original</tt> is not of a runtime type that can be stored in
      *     an array of class <tt>newType</tt>
      * @since 1.6
+     * 内部调用了System.arraycopy()方法
      */
     public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
+        //新建一个数组
         T[] copy = ((Object)newType == (Object)Object[].class)
             ? (T[]) new Object[newLength]
             : (T[]) Array.newInstance(newType.getComponentType(), newLength);
+        //调用System.arraycopy方法将原来数组拷贝到新数组中去
         System.arraycopy(original, 0, copy, 0,
                          Math.min(original.length, newLength));
         return copy;
