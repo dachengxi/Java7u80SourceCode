@@ -713,6 +713,7 @@ public abstract class AbstractQueuedSynchronizer
      * Release action for shared mode -- signal successor and ensure
      * propagation. (Note: For exclusive mode, release just amounts
      * to calling unparkSuccessor of head if it needs signal.)
+     * 共享模式的释放
      */
     private void doReleaseShared() {
         /*
@@ -758,9 +759,12 @@ public abstract class AbstractQueuedSynchronizer
      *
      * @param node the node
      * @param propagate the return value from a tryAcquireShared
+     * 设置队列头结点，检查后继是否以共享模式等待
      */
     private void setHeadAndPropagate(Node node, int propagate) {
+        // 头结点
         Node h = head; // Record old head for check below
+        // 设置当前结点为头结点
         setHead(node);
         /*
          * Try to signal next queued node if:
@@ -780,6 +784,7 @@ public abstract class AbstractQueuedSynchronizer
         if (propagate > 0 || h == null || h.waitStatus < 0) {
             Node s = node.next;
             if (s == null || s.isShared())
+                // 共享模式的释放
                 doReleaseShared();
         }
     }
@@ -790,6 +795,7 @@ public abstract class AbstractQueuedSynchronizer
      * Cancels an ongoing attempt to acquire.
      *
      * @param node the node
+     * 取消获取
      */
     private void cancelAcquire(Node node) {
         // Ignore if node doesn't exist
@@ -800,6 +806,7 @@ public abstract class AbstractQueuedSynchronizer
 
         // Skip cancelled predecessors
         Node pred = node.prev;
+        // 一直找到一个小于0的，大于0表示已被取消的
         while (pred.waitStatus > 0)
             node.prev = pred = pred.prev;
 
@@ -814,18 +821,24 @@ public abstract class AbstractQueuedSynchronizer
         node.waitStatus = Node.CANCELLED;
 
         // If we are the tail, remove ourselves.
+        // 如果当前结点是尾结点，将当前结点的前驱设置为尾结点
         if (node == tail && compareAndSetTail(node, pred)) {
+            // 将前驱结点的next设为null
             compareAndSetNext(pred, predNext, null);
         } else {
             // If successor needs signal, try to set pred's next-link
             // so it will get one. Otherwise wake it up to propagate.
             int ws;
+            //前驱结点不是头结点并且（前驱结点的等待状态是signal或者（前驱结点的等待状态不是取消并且设置前驱结点的等待状态为signal成功））并且前驱结点的线程不是null
             if (pred != head &&
                 ((ws = pred.waitStatus) == Node.SIGNAL ||
                  (ws <= 0 && compareAndSetWaitStatus(pred, ws, Node.SIGNAL))) &&
                 pred.thread != null) {
+                // 当前结点的next
                 Node next = node.next;
+                // next不为null并且等待状态不是取消
                 if (next != null && next.waitStatus <= 0)
+                    // 设置前驱结点的next为next
                     compareAndSetNext(pred, predNext, next);
             } else {
                 unparkSuccessor(node);
@@ -845,21 +858,25 @@ public abstract class AbstractQueuedSynchronizer
      * @return {@code true} if thread should block
      */
     private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
+        // 前驱结点的等待状态
         int ws = pred.waitStatus;
+        // signal，表示后继结点需要被唤醒
         if (ws == Node.SIGNAL)
             /*
              * This node has already set status asking a release
              * to signal it, so it can safely park.
              */
             return true;
-        if (ws > 0) {
+        if (ws > 0) {// 大于0 表示已经取消
             /*
              * Predecessor was cancelled. Skip over predecessors and
              * indicate retry.
              */
             do {
+                // 前驱结点的前驱，一直找到不大于0的
                 node.prev = pred = pred.prev;
             } while (pred.waitStatus > 0);
+            //新找到的前去结点的next设置为node
             pred.next = node;
         } else {
             /*
@@ -867,6 +884,7 @@ public abstract class AbstractQueuedSynchronizer
              * need a signal, but don't park yet.  Caller will need to
              * retry to make sure it cannot acquire before parking.
              */
+            // 设置前驱结点的状态为signal
             compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
         }
         return false;
@@ -943,17 +961,23 @@ public abstract class AbstractQueuedSynchronizer
             for (;;) {
                 // 新结点的前驱结点
                 final Node p = node.predecessor();
+                // p是头结点，且尝试获取成功
                 if (p == head && tryAcquire(arg)) {
+                    // 将node设置为头结点
                     setHead(node);
+                    // p是node的前驱，node为头结点了，p的next设置为null
                     p.next = null; // help GC
                     failed = false;
                     return;
                 }
+                // 获取失败之后，是否需要阻塞
+                // 阻塞并检查中断
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     parkAndCheckInterrupt())
                     throw new InterruptedException();
             }
         } finally {
+            // 获取失败，取消获取
             if (failed)
                 cancelAcquire(node);
         }
@@ -965,33 +989,48 @@ public abstract class AbstractQueuedSynchronizer
      * @param arg the acquire argument
      * @param nanosTimeout max wait time
      * @return {@code true} if acquired
+     * 独占模式的获取，支持超时
      */
     private boolean doAcquireNanos(int arg, long nanosTimeout)
         throws InterruptedException {
+        // 记录开始时间
         long lastTime = System.nanoTime();
+        // 以独占模式，添加到队列中
         final Node node = addWaiter(Node.EXCLUSIVE);
         boolean failed = true;
         try {
             for (;;) {
+                // 前驱结点
                 final Node p = node.predecessor();
+                // 前驱结点是头结点，并且尝试获取成功
                 if (p == head && tryAcquire(arg)) {
+                    // 当前节点设置为头结点
                     setHead(node);
+                    // 前驱结点的next设为null
                     p.next = null; // help GC
                     failed = false;
                     return true;
                 }
                 if (nanosTimeout <= 0)
                     return false;
+                // 获取失败后是否需要阻塞
+                // 超时时间大于自旋超时时间
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     nanosTimeout > spinForTimeoutThreshold)
+                    // 阻塞
                     LockSupport.parkNanos(this, nanosTimeout);
+                // 当前时间
                 long now = System.nanoTime();
+                // 当前时间减去开始时间 表示超时剩余时间
                 nanosTimeout -= now - lastTime;
+                // 开始时间从现在开始计时
                 lastTime = now;
+                // 中断检查
                 if (Thread.interrupted())
                     throw new InterruptedException();
             }
         } finally {
+            // 失败，取消获取
             if (failed)
                 cancelAcquire(node);
         }
@@ -1002,16 +1041,23 @@ public abstract class AbstractQueuedSynchronizer
      * @param arg the acquire argument
      */
     private void doAcquireShared(int arg) {
+        // 以共享模式新建结点，入队
         final Node node = addWaiter(Node.SHARED);
         boolean failed = true;
         try {
             boolean interrupted = false;
             for (;;) {
+                // 前驱结点
                 final Node p = node.predecessor();
+                // 前驱结点是头结点
                 if (p == head) {
+                    // 尝试是获取
                     int r = tryAcquireShared(arg);
+                    // 获取成功
                     if (r >= 0) {
+                        // 设置头结点
                         setHeadAndPropagate(node, r);
+                        // 前驱结点的next设为null
                         p.next = null; // help GC
                         if (interrupted)
                             selfInterrupt();
@@ -1019,11 +1065,13 @@ public abstract class AbstractQueuedSynchronizer
                         return;
                     }
                 }
+                // 获取失败后是否需要阻塞
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     parkAndCheckInterrupt())
                     interrupted = true;
             }
         } finally {
+            // 失败 取消获取
             if (failed)
                 cancelAcquire(node);
         }
@@ -1032,28 +1080,38 @@ public abstract class AbstractQueuedSynchronizer
     /**
      * Acquires in shared interruptible mode.
      * @param arg the acquire argument
+     * 共享模式获取，可中断
      */
     private void doAcquireSharedInterruptibly(int arg)
         throws InterruptedException {
+        // 新建共享模式结点，入队
         final Node node = addWaiter(Node.SHARED);
         boolean failed = true;
         try {
             for (;;) {
+                // 前驱结点
                 final Node p = node.predecessor();
+                // 前驱结点为头结点
                 if (p == head) {
+                    // 尝试获取
                     int r = tryAcquireShared(arg);
+                    // 获取成功
                     if (r >= 0) {
+                        // 设置头结点
                         setHeadAndPropagate(node, r);
+                        // 前驱结点设置为null
                         p.next = null; // help GC
                         failed = false;
                         return;
                     }
                 }
+                // 获取失败后是否需要阻塞
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     parkAndCheckInterrupt())
                     throw new InterruptedException();
             }
         } finally {
+            // 失败，取消获取
             if (failed)
                 cancelAcquire(node);
         }
@@ -1065,19 +1123,26 @@ public abstract class AbstractQueuedSynchronizer
      * @param arg the acquire argument
      * @param nanosTimeout max wait time
      * @return {@code true} if acquired
+     * 共享模式获取，带超时
      */
     private boolean doAcquireSharedNanos(int arg, long nanosTimeout)
         throws InterruptedException {
-
+        // 开始时间
         long lastTime = System.nanoTime();
+        // 新建共享模式结点，入队
         final Node node = addWaiter(Node.SHARED);
         boolean failed = true;
         try {
             for (;;) {
+                // 前驱结点
                 final Node p = node.predecessor();
+                // 前驱结点为头结点
                 if (p == head) {
+                    // 尝试共享模式获取
                     int r = tryAcquireShared(arg);
+                    // 获取成功
                     if (r >= 0) {
+                        // 设置头结点
                         setHeadAndPropagate(node, r);
                         p.next = null; // help GC
                         failed = false;
@@ -1086,6 +1151,7 @@ public abstract class AbstractQueuedSynchronizer
                 }
                 if (nanosTimeout <= 0)
                     return false;
+                // 获取失败，或者超过自旋超时时间，阻塞
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     nanosTimeout > spinForTimeoutThreshold)
                     LockSupport.parkNanos(this, nanosTimeout);
@@ -1096,6 +1162,7 @@ public abstract class AbstractQueuedSynchronizer
                     throw new InterruptedException();
             }
         } finally {
+            // 取消
             if (failed)
                 cancelAcquire(node);
         }
@@ -1191,6 +1258,8 @@ public abstract class AbstractQueuedSynchronizer
      *         thrown in a consistent fashion for synchronization to work
      *         correctly.
      * @throws UnsupportedOperationException if shared mode is not supported
+     * 尝试共享模式的获取
+     * 返回负数表示失败
      */
     protected int tryAcquireShared(int arg) {
         throw new UnsupportedOperationException();
@@ -1216,6 +1285,7 @@ public abstract class AbstractQueuedSynchronizer
      *         thrown in a consistent fashion for synchronization to work
      *         correctly.
      * @throws UnsupportedOperationException if shared mode is not supported
+     * 共享模式的尝试释放
      */
     protected boolean tryReleaseShared(int arg) {
         throw new UnsupportedOperationException();
@@ -1301,11 +1371,14 @@ public abstract class AbstractQueuedSynchronizer
      * @param nanosTimeout the maximum number of nanoseconds to wait
      * @return {@code true} if acquired; {@code false} if timed out
      * @throws InterruptedException if the current thread is interrupted
+     * 独占模式的尝试获取，支持中断，支持超时
      */
     public final boolean tryAcquireNanos(int arg, long nanosTimeout)
             throws InterruptedException {
+        //中断检查
         if (Thread.interrupted())
             throw new InterruptedException();
+        // 尝试获取，不成功的话调用带超时的获取doAcquireNanos
         return tryAcquire(arg) ||
             doAcquireNanos(arg, nanosTimeout);
     }
@@ -1319,11 +1392,16 @@ public abstract class AbstractQueuedSynchronizer
      *        {@link #tryRelease} but is otherwise uninterpreted and
      *        can represent anything you like.
      * @return the value returned from {@link #tryRelease}
+     * 独占模式的释放
      */
     public final boolean release(int arg) {
+        // 尝试释放，成功
         if (tryRelease(arg)) {
+            // 头结点
             Node h = head;
+            // 头结点不为null，头结点的等待状态不为0
             if (h != null && h.waitStatus != 0)
+                // 释放头结点的后继结点
                 unparkSuccessor(h);
             return true;
         }
@@ -1340,9 +1418,12 @@ public abstract class AbstractQueuedSynchronizer
      * @param arg the acquire argument.  This value is conveyed to
      *        {@link #tryAcquireShared} but is otherwise uninterpreted
      *        and can represent anything you like.
+     * 共享模式的获取，忽略中断
      */
     public final void acquireShared(int arg) {
+        // 尝试共享模式的获取，小于0表示获取不成功
         if (tryAcquireShared(arg) < 0)
+            // 获取不成功调用doAcquireShared
             doAcquireShared(arg);
     }
 
@@ -1358,11 +1439,14 @@ public abstract class AbstractQueuedSynchronizer
      * otherwise uninterpreted and can represent anything
      * you like.
      * @throws InterruptedException if the current thread is interrupted
+     * 共享模式获取，可中断
      */
     public final void acquireSharedInterruptibly(int arg)
             throws InterruptedException {
+        // 中断
         if (Thread.interrupted())
             throw new InterruptedException();
+        // 共享模式尝试获取，不成功的话调用doAcquireSharedInterruptibly
         if (tryAcquireShared(arg) < 0)
             doAcquireSharedInterruptibly(arg);
     }
@@ -1382,11 +1466,14 @@ public abstract class AbstractQueuedSynchronizer
      * @param nanosTimeout the maximum number of nanoseconds to wait
      * @return {@code true} if acquired; {@code false} if timed out
      * @throws InterruptedException if the current thread is interrupted
+     * 共享模式获取，可中断，带超时时间
      */
     public final boolean tryAcquireSharedNanos(int arg, long nanosTimeout)
             throws InterruptedException {
+        // 中断
         if (Thread.interrupted())
             throw new InterruptedException();
+        // 尝试共享模式获取，失败的话，调用带超时的共享模式获取
         return tryAcquireShared(arg) >= 0 ||
             doAcquireSharedNanos(arg, nanosTimeout);
     }
@@ -1399,9 +1486,12 @@ public abstract class AbstractQueuedSynchronizer
      *        {@link #tryReleaseShared} but is otherwise uninterpreted
      *        and can represent anything you like.
      * @return the value returned from {@link #tryReleaseShared}
+     * 共享模式的释放
      */
     public final boolean releaseShared(int arg) {
+        // 共享模式尝试释放
         if (tryReleaseShared(arg)) {
+            // 共享模式释放
             doReleaseShared();
             return true;
         }
