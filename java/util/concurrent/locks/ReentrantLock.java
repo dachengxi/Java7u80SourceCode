@@ -397,7 +397,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      * the fairness setting for this lock, then use
      * {@link #tryLock(long, TimeUnit) tryLock(0, TimeUnit.SECONDS) }
      * which is almost equivalent (it also detects interruption).
-     * 如果不想打破公平策略，可以使用带超时的tryLock，超时时间设为0
+     * 如果不想打破公平策略，可以使用带超时的tryLock
      *
      * <p> If the current thread already holds this lock then the hold
      * count is incremented by one and the method returns {@code true}.
@@ -426,6 +426,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      * are waiting for the lock. This is in contrast to the {@link #tryLock()}
      * method. If you want a timed {@code tryLock} that does permit barging on
      * a fair lock then combine the timed and un-timed forms together:
+     * 如果锁没有被其他线程持有，可以直接获取成功，同时设置锁的持有数量为1。
+     * 如果锁被设置为公平策略，如果有其他线程在等待锁，当前线程不能够获取到锁。
      *
      * <pre>if (lock.tryLock() || lock.tryLock(timeout, unit) ) { ... }
      * </pre>
@@ -482,10 +484,11 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      *         the lock could be acquired
      * @throws InterruptedException if the current thread is interrupted
      * @throws NullPointerException if the time unit is null
-     *
+     * 带超时的尝试获取锁
      */
     public boolean tryLock(long timeout, TimeUnit unit)
             throws InterruptedException {
+        // AQS中实现，但是tryAcquire由本类实现，有公平和非公平两种实现
         return sync.tryAcquireNanos(1, unit.toNanos(timeout));
     }
 
@@ -499,6 +502,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      *
      * @throws IllegalMonitorStateException if the current thread does not
      *         hold this lock
+     * 释放锁，如果当前线程持有锁，锁的持有数量减1，如果锁的持有数量为0,释放锁。
+     * 如果当前线程不是锁的持有者，抛异常。
      */
     public void unlock() {
         sync.release(1);
