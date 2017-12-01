@@ -727,18 +727,25 @@ public abstract class AbstractQueuedSynchronizer
          * fails, if so rechecking.
          */
         for (;;) {
+            // 头结点
             Node h = head;
             if (h != null && h != tail) {
+                // 头结点的等待状态
                 int ws = h.waitStatus;
+                // 后继节点需要被唤醒
                 if (ws == Node.SIGNAL) {
+                    // 等待状态置为0，不成功的话重试
                     if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
                         continue;            // loop to recheck cases
+                    // 等待状态置为0之后，释放头结点
                     unparkSuccessor(h);
                 }
+                // 等待状态为0，需要继续PROPAGATE到下一个结点
                 else if (ws == 0 &&
                          !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
                     continue;                // loop on failed CAS
             }
+            // h不等于head的话，表示head发生了变化，需要继续循环
             if (h == head)                   // loop if head changed
                 break;
         }
@@ -924,13 +931,17 @@ public abstract class AbstractQueuedSynchronizer
     /**
      * Acquires in exclusive interruptible mode.
      * @param arg the acquire argument
+     * 以独占可中断模式获取
      */
     private void doAcquireInterruptibly(int arg)
         throws InterruptedException {
+        // 尝试获取不成功的话，才会调用该方法，所以这里要创建节点入队
+        // 独占模式创建结点并入队
         final Node node = addWaiter(Node.EXCLUSIVE);
         boolean failed = true;
         try {
             for (;;) {
+                // 新结点的前驱结点
                 final Node p = node.predecessor();
                 if (p == head && tryAcquire(arg)) {
                     setHead(node);
@@ -1117,6 +1128,7 @@ public abstract class AbstractQueuedSynchronizer
      *         thrown in a consistent fashion for synchronization to work
      *         correctly.
      * @throws UnsupportedOperationException if exclusive mode is not supported
+     * 独占模式的尝试获取
      */
     protected boolean tryAcquire(int arg) {
         throw new UnsupportedOperationException();
@@ -1239,8 +1251,10 @@ public abstract class AbstractQueuedSynchronizer
      * @param arg the acquire argument.  This value is conveyed to
      *        {@link #tryAcquire} but is otherwise uninterpreted and
      *        can represent anything you like.
+     * 独占模式的获取，忽略中断
      */
     public final void acquire(int arg) {
+        //先尝试获取，获取不成功，将线程以独占模式入队列
         if (!tryAcquire(arg) &&
             acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
             selfInterrupt();
@@ -1259,11 +1273,14 @@ public abstract class AbstractQueuedSynchronizer
      *        {@link #tryAcquire} but is otherwise uninterpreted and
      *        can represent anything you like.
      * @throws InterruptedException if the current thread is interrupted
+     * 独占模式的获取，支持中断取消
      */
     public final void acquireInterruptibly(int arg)
             throws InterruptedException {
+        // 线程被中断
         if (Thread.interrupted())
             throw new InterruptedException();
+        // 尝试获取，不成功的话，调用doAcquireInterruptibly
         if (!tryAcquire(arg))
             doAcquireInterruptibly(arg);
     }
