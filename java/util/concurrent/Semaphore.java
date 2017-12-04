@@ -155,18 +155,21 @@ import java.util.concurrent.atomic.*;
  *
  * @since 1.5
  * @author Doug Lea
- *
+ * 信号量
+ * 可以控制同时访问一个资源的数量
  */
 
 public class Semaphore implements java.io.Serializable {
     private static final long serialVersionUID = -3222578661600680210L;
     /** All mechanics via AbstractQueuedSynchronizer subclass */
+    // 同步器
     private final Sync sync;
 
     /**
      * Synchronization implementation for semaphore.  Uses AQS state
      * to represent permits. Subclassed into fair and nonfair
      * versions.
+     * Semaphore的AQS实现，使用AQS的state来表示许可
      */
     abstract static class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = 1192457210091910933L;
@@ -179,27 +182,38 @@ public class Semaphore implements java.io.Serializable {
             return getState();
         }
 
+        // 非公平的，共享模式的尝试获取
         final int nonfairTryAcquireShared(int acquires) {
             for (;;) {
+                // 可用许可
                 int available = getState();
+                // 剩余许可
                 int remaining = available - acquires;
+                // remaining小于0 表示可用的小于要获取的，不够用，继续循环等待
+                // remaining大于或者等于0，表示许可够用，使用CAS设置许可数量
                 if (remaining < 0 ||
                     compareAndSetState(available, remaining))
                     return remaining;
             }
         }
 
+        // 共享模式尝试释放
         protected final boolean tryReleaseShared(int releases) {
             for (;;) {
+                // 当前可用许可
                 int current = getState();
+                // 释放后可用许可
                 int next = current + releases;
+                // 溢出了，太大了
                 if (next < current) // overflow
                     throw new Error("Maximum permit count exceeded");
+                // CAS设置许可数量
                 if (compareAndSetState(current, next))
                     return true;
             }
         }
 
+        // 减少许可
         final void reducePermits(int reductions) {
             for (;;) {
                 int current = getState();
@@ -211,6 +225,7 @@ public class Semaphore implements java.io.Serializable {
             }
         }
 
+        // 许可置为0
         final int drainPermits() {
             for (;;) {
                 int current = getState();
@@ -222,6 +237,7 @@ public class Semaphore implements java.io.Serializable {
 
     /**
      * NonFair version
+     * 非公平的同步器
      */
     static final class NonfairSync extends Sync {
         private static final long serialVersionUID = -2694183684443567898L;
@@ -231,12 +247,14 @@ public class Semaphore implements java.io.Serializable {
         }
 
         protected int tryAcquireShared(int acquires) {
+            // 调用非公平共享模式的尝试获取
             return nonfairTryAcquireShared(acquires);
         }
     }
 
     /**
      * Fair version
+     * 公平版本的同步器
      */
     static final class FairSync extends Sync {
         private static final long serialVersionUID = 2014338818796000944L;
@@ -245,11 +263,15 @@ public class Semaphore implements java.io.Serializable {
             super(permits);
         }
 
+        // 尝试共享模式的获取
         protected int tryAcquireShared(int acquires) {
             for (;;) {
+                // 公平的版本，需要先检查是否有已经在队列中的前驱结点们，如果有，返回-1表示获取失败
                 if (hasQueuedPredecessors())
                     return -1;
+                // 可用许可
                 int available = getState();
+                // 获取之后，剩余许可
                 int remaining = available - acquires;
                 if (remaining < 0 ||
                     compareAndSetState(available, remaining))
@@ -265,6 +287,7 @@ public class Semaphore implements java.io.Serializable {
      * @param permits the initial number of permits available.
      *        This value may be negative, in which case releases
      *        must occur before any acquires will be granted.
+     * 默认是非公平版本
      */
     public Semaphore(int permits) {
         sync = new NonfairSync(permits);
@@ -280,6 +303,7 @@ public class Semaphore implements java.io.Serializable {
      * @param fair {@code true} if this semaphore will guarantee
      *        first-in first-out granting of permits under contention,
      *        else {@code false}
+     * 可以指定公平性
      */
     public Semaphore(int permits, boolean fair) {
         sync = fair ? new FairSync(permits) : new NonfairSync(permits);
@@ -288,18 +312,23 @@ public class Semaphore implements java.io.Serializable {
     /**
      * Acquires a permit from this semaphore, blocking until one is
      * available, or the thread is {@linkplain Thread#interrupt interrupted}.
+     * 从当前的semaphore中获取一个许可，如果没有可用许可，需要阻塞
      *
      * <p>Acquires a permit, if one is available and returns immediately,
      * reducing the number of available permits by one.
+     * 获取一个许可，如果许可可用，立即返回，可用许可数量减少1
      *
      * <p>If no permit is available then the current thread becomes
      * disabled for thread scheduling purposes and lies dormant until
      * one of two things happens:
+     * 如果没有可用许可，当前线程阻塞，直到发生下面两件事中的一个：
      * <ul>
      * <li>Some other thread invokes the {@link #release} method for this
      * semaphore and the current thread is next to be assigned a permit; or
      * <li>Some other thread {@linkplain Thread#interrupt interrupts}
      * the current thread.
+     * 其他线程调用release方法释放许可，当前线程是下一个获取许可的线程
+     * 或者其他线程中断了当前线程
      * </ul>
      *
      * <p>If the current thread:
@@ -312,8 +341,10 @@ public class Semaphore implements java.io.Serializable {
      * interrupted status is cleared.
      *
      * @throws InterruptedException if the current thread is interrupted
+     * 获取许可，支持中断
      */
     public void acquire() throws InterruptedException {
+        // 共享模式的获取，可中断
         sync.acquireSharedInterruptibly(1);
     }
 
@@ -335,8 +366,10 @@ public class Semaphore implements java.io.Serializable {
      * the time it would have received the permit had no interruption
      * occurred.  When the thread does return from this method its interrupt
      * status will be set.
+     * 获取不可中断的许可
      */
     public void acquireUninterruptibly() {
+        // 共享模式的获取
         sync.acquireShared(1);
     }
 
@@ -363,8 +396,10 @@ public class Semaphore implements java.io.Serializable {
      *
      * @return {@code true} if a permit was acquired and {@code false}
      *         otherwise
+     * 尝试获取许可
      */
     public boolean tryAcquire() {
+        // 非公平的尝试获取
         return sync.nonfairTryAcquireShared(1) >= 0;
     }
 
@@ -408,6 +443,7 @@ public class Semaphore implements java.io.Serializable {
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      * @throws InterruptedException if the current thread is interrupted
+     * 带有超时时间的尝试获取
      */
     public boolean tryAcquire(long timeout, TimeUnit unit)
         throws InterruptedException {
@@ -426,8 +462,10 @@ public class Semaphore implements java.io.Serializable {
      * have acquired that permit by calling {@link #acquire}.
      * Correct usage of a semaphore is established by programming convention
      * in the application.
+     * 释放许可
      */
     public void release() {
+        // 共享模式的释放
         sync.releaseShared(1);
     }
 
@@ -466,6 +504,7 @@ public class Semaphore implements java.io.Serializable {
      * @param permits the number of permits to acquire
      * @throws InterruptedException if the current thread is interrupted
      * @throws IllegalArgumentException if {@code permits} is negative
+     * 指定许可数量的获取
      */
     public void acquire(int permits) throws InterruptedException {
         if (permits < 0) throw new IllegalArgumentException();
@@ -493,7 +532,7 @@ public class Semaphore implements java.io.Serializable {
      *
      * @param permits the number of permits to acquire
      * @throws IllegalArgumentException if {@code permits} is negative
-     *
+     * 指定许可数量的获取，不支持中断
      */
     public void acquireUninterruptibly(int permits) {
         if (permits < 0) throw new IllegalArgumentException();
@@ -526,6 +565,7 @@ public class Semaphore implements java.io.Serializable {
      * @return {@code true} if the permits were acquired and
      *         {@code false} otherwise
      * @throws IllegalArgumentException if {@code permits} is negative
+     * 指定许可数量的尝试获取
      */
     public boolean tryAcquire(int permits) {
         if (permits < 0) throw new IllegalArgumentException();
@@ -581,6 +621,7 @@ public class Semaphore implements java.io.Serializable {
      *         if the waiting time elapsed before all permits were acquired
      * @throws InterruptedException if the current thread is interrupted
      * @throws IllegalArgumentException if {@code permits} is negative
+     * 带有超时的指定许可数量的尝试获取
      */
     public boolean tryAcquire(int permits, long timeout, TimeUnit unit)
         throws InterruptedException {
@@ -609,6 +650,7 @@ public class Semaphore implements java.io.Serializable {
      *
      * @param permits the number of permits to release
      * @throws IllegalArgumentException if {@code permits} is negative
+     * 指定数量的释放
      */
     public void release(int permits) {
         if (permits < 0) throw new IllegalArgumentException();
