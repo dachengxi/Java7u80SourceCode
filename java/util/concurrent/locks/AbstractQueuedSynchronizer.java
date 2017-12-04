@@ -1332,7 +1332,7 @@ public abstract class AbstractQueuedSynchronizer
      * 独占模式的获取，忽略中断
      */
     public final void acquire(int arg) {
-        //先尝试获取，获取不成功，将线程以独占模式入队列
+        //先尝试获取，获取不成功，将线程以独占模式入队列，然后尝试从等待队列中去获取
         if (!tryAcquire(arg) &&
             acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
             selfInterrupt();
