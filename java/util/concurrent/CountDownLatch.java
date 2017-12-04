@@ -221,17 +221,21 @@ public class CountDownLatch {
     /**
      * Causes the current thread to wait until the latch has counted down to
      * zero, unless the thread is {@linkplain Thread#interrupt interrupted}.
+     * 调用此方法会导致线程被阻塞，直到CountDownLatch的count减少到0。可以被中断。
      *
      * <p>If the current count is zero then this method returns immediately.
+     * 当前count为0的话，调用该方法立即返回。
      *
      * <p>If the current count is greater than zero then the current
      * thread becomes disabled for thread scheduling purposes and lies
      * dormant until one of two things happen:
+     * 如果当前count大于0，调用await的当前的线程会阻塞，直到下面两件事中的一件发生：
      * <ul>
      * <li>The count reaches zero due to invocations of the
      * {@link #countDown} method; or
      * <li>Some other thread {@linkplain Thread#interrupt interrupts}
      * the current thread.
+     * 调用countDown方法使count变成了0，或者线程被中断
      * </ul>
      *
      * <p>If the current thread:
@@ -246,6 +250,7 @@ public class CountDownLatch {
      *         while waiting
      */
     public void await() throws InterruptedException {
+        // 调用共享模式的可中断的获取
         sync.acquireSharedInterruptibly(1);
     }
 
@@ -289,6 +294,7 @@ public class CountDownLatch {
      *         if the waiting time elapsed before the count reached zero
      * @throws InterruptedException if the current thread is interrupted
      *         while waiting
+     * 带有超时时间的await方法
      */
     public boolean await(long timeout, TimeUnit unit)
         throws InterruptedException {
@@ -298,6 +304,7 @@ public class CountDownLatch {
     /**
      * Decrements the count of the latch, releasing all waiting threads if
      * the count reaches zero.
+     * 减少count数量，如果count变为0，释放所有的等待的线程
      *
      * <p>If the current count is greater than zero then it is decremented.
      * If the new count is zero then all waiting threads are re-enabled for
@@ -306,6 +313,7 @@ public class CountDownLatch {
      * <p>If the current count equals zero then nothing happens.
      */
     public void countDown() {
+        // 共享模式的释放
         sync.releaseShared(1);
     }
 
