@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.*;
 /**
  * A synchronization aid that allows one or more threads to wait until
  * a set of operations being performed in other threads completes.
+ * 允许一个或者多个线程等待，直到其他线程完成一组操作。
  *
  * <p>A {@code CountDownLatch} is initialized with a given <em>count</em>.
  * The {@link #await await} methods block until the current count reaches
@@ -48,6 +49,9 @@ import java.util.concurrent.atomic.*;
  * {@link #await await} return immediately.  This is a one-shot phenomenon
  * -- the count cannot be reset.  If you need a version that resets the
  * count, consider using a {@link CyclicBarrier}.
+ * CountDownLatch初始化的时候可以指定一个数量。await方法会阻塞，直到调用countDown方法
+ * 将数量减少到0。所有的等待线程都释放之后，后面所有的对await的调用直接返回。
+ * count数量不能被重置，是一次性的。如果想要支持可以重置count的，可以使用CyclicBarrier。
  *
  * <p>A {@code CountDownLatch} is a versatile synchronization tool
  * and can be used for a number of purposes.  A
@@ -162,6 +166,7 @@ public class CountDownLatch {
     /**
      * Synchronization control For CountDownLatch.
      * Uses AQS state to represent count.
+     * CountDownLatch的同步器，使用AQS的state表示count数量
      */
     private static final class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = 4982264981922014374L;
@@ -178,19 +183,26 @@ public class CountDownLatch {
             return (getState() == 0) ? 1 : -1;
         }
 
+        // 共享模式尝试释放
         protected boolean tryReleaseShared(int releases) {
             // Decrement count; signal when transition to zero
             for (;;) {
+                // count数量
                 int c = getState();
+                // count为0直接返回false
                 if (c == 0)
                     return false;
+                // 释放之后的count，也就是count会减少1
                 int nextc = c-1;
+                // CAS设置count
                 if (compareAndSetState(c, nextc))
+                    // 返回释放后的count是否等于0，等于0表示所有线程执行完毕
                     return nextc == 0;
             }
         }
     }
 
+    // 同步器
     private final Sync sync;
 
     /**
@@ -199,6 +211,7 @@ public class CountDownLatch {
      * @param count the number of times {@link #countDown} must be invoked
      *        before threads can pass through {@link #await}
      * @throws IllegalArgumentException if {@code count} is negative
+     * 使用给定的count数量初始化CountDownLatch
      */
     public CountDownLatch(int count) {
         if (count < 0) throw new IllegalArgumentException("count < 0");
