@@ -105,7 +105,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      */
 
     /** Main lock guarding all access */
-    //锁
+    //锁，主锁，守护所有的访问
     final ReentrantLock lock;
     /** Condition for waiting takes */
     //队列非空的条件，如果队列为空，获取元素的线程会调用notEmpty.await来等待队列变成非空的情况
@@ -157,10 +157,11 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     /**
      * Inserts element at current put position, advances, and signals.
      * Call only when holding lock.
-     * 插入元素
+     * 插入元素，在当前需要插入的位置，插入的位置由putIndex指示
+     * 只有在持有锁的时候才能被调用
      */
     private void insert(E x) {
-        //在putInde处插入元素
+        //在putIndex处插入元素
         items[putIndex] = x;
         //punIndex加1
         putIndex = inc(putIndex);
@@ -173,7 +174,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     /**
      * Extracts element at current take position, advances, and signals.
      * Call only when holding lock.
-     * 提取元素
+     * 提取元素，提取takeIndex位置处的元素，提取之后删除当前元素
      */
     private E extract() {
         //存储队列元素的数组
@@ -211,8 +212,10 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         } else {//在中间
             // slide over all others up through putIndex.
             for (;;) {
+                //要删除位置的索引的下一个索引
                 int nexti = inc(i);
                 //将i元素后面的元素往前移动一个位置
+                // nexti不等于putIndex表示nexti不是最后一个元素
                 if (nexti != putIndex) {
                     items[i] = items[nexti];
                     i = nexti;
@@ -343,6 +346,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
                 return false;
             else {
                 //在putIndex处插入元素
+                // insert中添加完元素会唤醒等待不为空条件的线程
                 insert(e);
                 return true;
             }
@@ -372,7 +376,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
             while (count == items.length)
                 //需要等待队列变成不为满
                 notFull.await();
-            //队列此时可以插入元素
+            //队列变成了不满，此时可以插入元素
             insert(e);
         } finally {
             //解锁
@@ -419,6 +423,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
 
     /**
      * 获取元素，队列为空的话，返回null
+     * 使用extract方法获取元素，获取之后删除
      * @return
      */
     public E poll() {
@@ -436,6 +441,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
 
     /**
      * 获取元素，如果队列为空会阻塞
+     * 使用extract方法获取元素，获取之后删除
      * @return
      * @throws InterruptedException
      */
@@ -459,6 +465,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
 
     /**
      * 获取元素，可以指定超时时间，超时之后返回null
+     * 使用extract方法获取元素，获取之后删除
      * @param timeout
      * @param unit
      * @return
@@ -490,6 +497,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
 
     /**
      * 返回队头元素，但是不删除
+     * 使用itemAt获取元素，获取后不删除
      * @return
      */
     public E peek() {
