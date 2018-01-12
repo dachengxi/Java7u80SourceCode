@@ -55,11 +55,14 @@ import sun.security.action.GetPropertyAction;
  *     &quot;<code>z</code>&quot;, &quot;<code>A</code>&quot; through
  *     &quot;<code>Z</code>&quot; and &quot;<code>0</code>&quot;
  *     through &quot;<code>9</code>&quot; remain the same.
+ *     含有字母数字的字符：a-z，A-Z，0-9都保持原样
  * <li>The special characters &quot;<code>.</code>&quot;,
  *     &quot;<code>-</code>&quot;, &quot;<code>*</code>&quot;, and
  *     &quot;<code>_</code>&quot; remain the same.
+ *     特殊字符：.（英文点），-（中横线），*（星号），_（下划线）都保持原样
  * <li>The space character &quot;<code>&nbsp;</code>&quot; is
  *     converted into a plus sign &quot;<code>+</code>&quot;.
+ *     空格转换成—+加号
  * <li>All other characters are unsafe and are first converted into
  *     one or more bytes using some encoding scheme. Then each byte is
  *     represented by the 3-character string
@@ -81,6 +84,7 @@ import sun.security.action.GetPropertyAction;
  * @since   JDK1.0
  */
 public class URLEncoder {
+    // 不需要编码的字符
     static BitSet dontNeedEncoding;
     static final int caseDiff = ('a' - 'A');
     static String dfltEncName = null;
@@ -221,6 +225,7 @@ public class URLEncoder {
             int c = (int) s.charAt(i);
             //System.out.println("Examining character: " + c);
             if (dontNeedEncoding.get(c)) {
+                // 空格转换成+号
                 if (c == ' ') {
                     c = '+';
                     needToChange = true;
