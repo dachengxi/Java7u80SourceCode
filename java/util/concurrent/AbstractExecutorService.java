@@ -125,10 +125,14 @@ public abstract class AbstractExecutorService implements ExecutorService {
     /**
      * @throws RejectedExecutionException {@inheritDoc}
      * @throws NullPointerException       {@inheritDoc}
+     * 提交一个Callable任务，Callable任务是可以有返回值的
      */
     public <T> Future<T> submit(Callable<T> task) {
+        // task为null，直接抛异常
         if (task == null) throw new NullPointerException();
+        // 将Callable类型的task封装成RunnableFuture
         RunnableFuture<T> ftask = newTaskFor(task);
+        // 执行task
         execute(ftask);
         return ftask;
     }

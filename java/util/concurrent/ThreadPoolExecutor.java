@@ -1331,8 +1331,10 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      *         {@code RejectedExecutionHandler}, if the task
      *         cannot be accepted for execution
      * @throws NullPointerException if {@code command} is null
+     * 执行给定的任务
      */
     public void execute(Runnable command) {
+        // 任务为null，抛异常
         if (command == null)
             throw new NullPointerException();
         /*
@@ -1355,19 +1357,33 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
          * thread.  If it fails, we know we are shut down or saturated
          * and so reject the task.
          */
+        // 获取保存状态和线程数的值
         int c = ctl.get();
+        // 先获取当前工作的线程，如果比核心线程数小
+        // 尝试给这个任务创建一个新线程，并把这个任务
+        // 设置为第一个任务执行
+        // addWorker第二个参数为true表示使用核心线程数
         if (workerCountOf(c) < corePoolSize) {
             if (addWorker(command, true))
                 return;
             c = ctl.get();
         }
+        // 如果正在运行的线程数比核心线程数大，线程池正在运行，
+        // 并且能入队成功（阻塞队列未满）
         if (isRunning(c) && workQueue.offer(command)) {
+            // 入队成功后需要再次确认线程数，因为入队之后，可能另外
+            // 一个线程关闭了线程池或者刚刚入队的线程死了
             int recheck = ctl.get();
+            // 如果线程池不运行了，从队列中移除，调用reject方法
             if (! isRunning(recheck) && remove(command))
                 reject(command);
+            // 工作线程为0，起一个新的工作线程去队列里拿任务执行
             else if (workerCountOf(recheck) == 0)
                 addWorker(null, false);
         }
+        // 入队失败，尝试起一个新工作线程去队列拿任务执行。
+        // 如果起新线程失败，调用reject方法。
+        // addWorker第二个参数为true表示使用最大线程数
         else if (!addWorker(command, false))
             reject(command);
     }
