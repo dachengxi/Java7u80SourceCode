@@ -104,6 +104,8 @@ package java.util;
  * @see AbstractList
  * @see AbstractSequentialList
  * @since 1.2
+ *
+ * List是有序的集合
  */
 
 public interface List<E> extends Collection<E> {
@@ -157,6 +159,7 @@ public interface List<E> extends Collection<E> {
      * maintained by this list.  (In other words, this method must
      * allocate a new array even if this list is backed by an array).
      * The caller is thus free to modify the returned array.
+     * 返回的数组是安全的，list不维护对返回数组的引用
      *
      * <p>This method acts as bridge between array-based and collection-based
      * APIs.
@@ -243,6 +246,7 @@ public interface List<E> extends Collection<E> {
      * (if such an element exists).  Returns <tt>true</tt> if this list
      * contained the specified element (or equivalently, if this list changed
      * as a result of the call).
+     * 移除第一个出现的元素
      *
      * @param o element to be removed from this list, if present
      * @return <tt>true</tt> if this list contained the specified element
@@ -287,6 +291,7 @@ public interface List<E> extends Collection<E> {
      * operation is undefined if the specified collection is modified while
      * the operation is in progress.  (Note that this will occur if the
      * specified collection is this list, and it's nonempty.)
+     * 将所有的元素追加到list结尾
      *
      * @param c collection containing elements to be added to this list
      * @return <tt>true</tt> if this list changed as a result of the call
@@ -396,6 +401,7 @@ public interface List<E> extends Collection<E> {
      * equal if they contain the same elements in the same order.  This
      * definition ensures that the equals method works properly across
      * different implementations of the <tt>List</tt> interface.
+     * 两个list包含相同的元素并且有相同的顺序
      *
      * @param o the object to be compared for equality with this list
      * @return <tt>true</tt> if the specified object is equal to this list

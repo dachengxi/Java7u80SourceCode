@@ -181,6 +181,7 @@ public interface Collection<E> extends Iterable<E> {
      * maintained by this collection.  (In other words, this method must
      * allocate a new array even if this collection is backed by an array).
      * The caller is thus free to modify the returned array.
+     * 返回的数组是安全的，collection不维护对返回数组的引用
      *
      * <p>This method acts as bridge between array-based and collection-based
      * APIs.
@@ -446,6 +447,8 @@ public interface Collection<E> extends Iterable<E> {
      * to satisfy the general contract for the <tt>Object.hashCode</tt> method.
      * In particular, <tt>c1.equals(c2)</tt> implies that
      * <tt>c1.hashCode()==c2.hashCode()</tt>.
+     * 重写equals方法，必须要重写hashCode方法
+     * equals方法相等，则hashCode方法也相等
      *
      * @return the hash code value for this collection
      *
