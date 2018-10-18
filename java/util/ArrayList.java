@@ -32,6 +32,10 @@ package java.util;
  * this class provides methods to manipulate the size of the array that is
  * used internally to store the list.  (This class is roughly equivalent to
  * <tt>Vector</tt>, except that it is unsynchronized.)
+ * 可变大小的数组实现。
+ * 可以存放所有元素，包括null。
+ * 内部使用数组。
+ * 和Vector一样，但是ArrayList不是线程安全的类。
  *
  * <p>The <tt>size</tt>, <tt>isEmpty</tt>, <tt>get</tt>, <tt>set</tt>,
  * <tt>iterator</tt>, and <tt>listIterator</tt> operations run in constant
@@ -39,6 +43,9 @@ package java.util;
  * that is, adding n elements requires O(n) time.  All of the other operations
  * run in linear time (roughly speaking).  The constant factor is low compared
  * to that for the <tt>LinkedList</tt> implementation.
+ * size,isEmpty,get,set,iterator,listIterator操作都是恒定时间
+ * add是恒定分摊时间的操作
+ * 其他操作都是线性时间
  *
  * <p>Each <tt>ArrayList</tt> instance has a <i>capacity</i>.  The capacity is
  * the size of the array used to store the elements in the list.  It is always
@@ -59,6 +66,7 @@ package java.util;
  * resizes the backing array; merely setting the value of an element is not
  * a structural modification.)  This is typically accomplished by
  * synchronizing on some object that naturally encapsulates the list.
+ * 非线程安全的
  *
  * If no such object exists, the list should be "wrapped" using the
  * {@link Collections#synchronizedList Collections.synchronizedList}
@@ -77,6 +85,7 @@ package java.util;
  * concurrent modification, the iterator fails quickly and cleanly, rather
  * than risking arbitrary, non-deterministic behavior at an undetermined
  * time in the future.
+ * 快速失败的
  *
  * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
@@ -151,7 +160,7 @@ public class ArrayList<E> extends AbstractList<E>
 
     /**
      * Constructs an empty list with an initial capacity of ten.
-     * 默认初始容量10，空数组
+     * 默认初始容量0，空数组
      */
     public ArrayList() {
         super();
