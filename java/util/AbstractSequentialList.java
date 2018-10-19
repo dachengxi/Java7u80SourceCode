@@ -31,6 +31,7 @@ package java.util;
  * backed by a "sequential access" data store (such as a linked list).  For
  * random access data (such as an array), <tt>AbstractList</tt> should be used
  * in preference to this class.<p>
+ * 顺序访问的列表，可以继承此类，随机访问的需要继承AbstractList
  *
  * This class is the opposite of the <tt>AbstractList</tt> class in the sense
  * that it implements the "random access" methods (<tt>get(int index)</tt>,
@@ -64,6 +65,7 @@ package java.util;
  * @see AbstractList
  * @see AbstractCollection
  * @since 1.2
+ * 顺序访问的列表，这种列表的操作都是顺序的，实现都是先得到listIterator，然后用Iterator进行操作，所以子类要自己实现listIterator
  */
 
 public abstract class AbstractSequentialList<E> extends AbstractList<E> {
@@ -80,6 +82,7 @@ public abstract class AbstractSequentialList<E> extends AbstractList<E> {
      * <p>This implementation first gets a list iterator pointing to the
      * indexed element (with <tt>listIterator(index)</tt>).  Then, it gets
      * the element using <tt>ListIterator.next</tt> and returns it.
+     * 先获取listIterator，然后调用next方法就可以得到元素
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
