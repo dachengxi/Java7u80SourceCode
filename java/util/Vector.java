@@ -75,6 +75,7 @@ package java.util;
  * @see Collection
  * @see LinkedList
  * @since   JDK1.0
+ * ArrayList一样的功能，但是Vector是线程安全的
  */
 public class Vector<E>
     extends AbstractList<E>
