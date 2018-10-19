@@ -161,6 +161,7 @@ public class ArrayList<E> extends AbstractList<E>
     /**
      * Constructs an empty list with an initial capacity of ten.
      * 默认初始容量0，空数组
+     * 注释不对！
      */
     public ArrayList() {
         super();
