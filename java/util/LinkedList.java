@@ -29,10 +29,13 @@ package java.util;
  * Doubly-linked list implementation of the {@code List} and {@code Deque}
  * interfaces.  Implements all optional list operations, and permits all
  * elements (including {@code null}).
+ * 双向链表，实现了List和Deque接口。
+ * 可以存储所有元素，包括null
  *
  * <p>All of the operations perform as could be expected for a doubly-linked
  * list.  Operations that index into the list will traverse the list from
  * the beginning or the end, whichever is closer to the specified index.
+ * 双向链表，找元素的话，需要从头到尾的遍历
  *
  * <p><strong>Note that this implementation is not synchronized.</strong>
  * If multiple threads access a linked list concurrently, and at least
@@ -42,6 +45,7 @@ package java.util;
  * an element is not a structural modification.)  This is typically
  * accomplished by synchronizing on some object that naturally
  * encapsulates the list.
+ * 不是线程安全的
  *
  * If no such object exists, the list should be "wrapped" using the
  * {@link Collections#synchronizedList Collections.synchronizedList}
@@ -58,6 +62,7 @@ package java.util;
  * modification, the iterator fails quickly and cleanly, rather than
  * risking arbitrary, non-deterministic behavior at an undetermined
  * time in the future.
+ * 快速失败的
  *
  * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
