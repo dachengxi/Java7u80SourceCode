@@ -106,6 +106,7 @@ public class Collections {
      * <i>mutually comparable</i> (that is, {@code e1.compareTo(e2)}
      * must not throw a {@code ClassCastException} for any elements
      * {@code e1} and {@code e2} in the list).
+     * 升序排列
      *
      * <p>This sort is guaranteed to be <i>stable</i>:  equal elements will
      * not be reordered as a result of the sort.
@@ -121,6 +122,7 @@ public class Collections {
      * storage requirements vary from a small constant for nearly sorted
      * input arrays to n/2 object references for randomly ordered input
      * arrays.
+     * 归并排序
      *
      * <p>The implementation takes equal advantage of ascending and
      * descending order in its input array, and can take advantage of
@@ -149,6 +151,7 @@ public class Collections {
      * @throws IllegalArgumentException (optional) if the implementation
      *         detects that the natural ordering of the list elements is
      *         found to violate the {@link Comparable} contract
+     * 使用Arrays.sort，然后遍历重新设置每个元素
      */
     public static <T extends Comparable<? super T>> void sort(List<T> list) {
         Object[] a = list.toArray();
@@ -231,12 +234,15 @@ public class Collections {
      * call.  If it is not sorted, the results are undefined.  If the list
      * contains multiple elements equal to the specified object, there is no
      * guarantee which one will be found.
+     * 二分查找
      *
      * <p>This method runs in log(n) time for a "random access" list (which
      * provides near-constant-time positional access).  If the specified list
      * does not implement the {@link RandomAccess} interface and is large,
      * this method will do an iterator-based binary search that performs
      * O(n) link traversals and O(log n) element comparisons.
+     * 随机存取的列表 log(n)
+     * 没有实现随机存取的，基于迭代器进行二分查找 o(n)
      *
      * @param  list the list to be searched.
      * @param  key the key to be searched for.
@@ -413,6 +419,7 @@ public class Collections {
      * Reverses the order of the elements in the specified list.<p>
      *
      * This method runs in linear time.
+     * 线性时间
      *
      * @param  list the list whose elements are to be reversed.
      * @throws UnsupportedOperationException if the specified list or
