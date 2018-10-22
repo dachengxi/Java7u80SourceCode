@@ -34,6 +34,8 @@ import java.io.*;
  * unsynchronized and permits nulls.)  This class makes no guarantees as to
  * the order of the map; in particular, it does not guarantee that the order
  * will remain constant over time.
+ * 和HashTable一样，但是HashMap是线程不安全的
+ * HashMap允许null元素。
  *
  * <p>This implementation provides constant-time performance for the basic
  * operations (<tt>get</tt> and <tt>put</tt>), assuming the hash function
