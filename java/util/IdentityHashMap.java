@@ -34,6 +34,8 @@ import java.io.*;
  * <tt>(k1==k2)</tt>.  (In normal <tt>Map</tt> implementations (like
  * <tt>HashMap</tt>) two keys <tt>k1</tt> and <tt>k2</tt> are considered equal
  * if and only if <tt>(k1==null ? k2==null : k1.equals(k2))</tt>.)
+ * 使用引用相等代替对象相等来比较key。
+ * 比较的时候使用 k1 == k2
  *
  * <p><b>This class is <i>not</i> a general-purpose <tt>Map</tt>
  * implementation!  While this class implements the <tt>Map</tt> interface, it
@@ -50,6 +52,8 @@ import java.io.*;
  * Another typical use of this class is to maintain <i>proxy objects</i>.  For
  * example, a debugging facility might wish to maintain a proxy object for
  * each object in the program being debugged.
+ * 序列化和深度拷贝的时候可以使用。
+ * 另外一个典型的使用是用来维持代理对象
  *
  * <p>This class provides all of the optional map operations, and permits
  * <tt>null</tt> values and the <tt>null</tt> key.  This class makes no
@@ -60,6 +64,7 @@ import java.io.*;
  * operations (<tt>get</tt> and <tt>put</tt>), assuming the system
  * identity hash function ({@link System#identityHashCode(Object)})
  * disperses elements properly among the buckets.
+ * 哈希方法使用的是System.identityHashCode
  *
  * <p>This class has one tuning parameter (which affects performance but not
  * semantics): <i>expected maximum size</i>.  This parameter is the maximum
@@ -85,6 +90,7 @@ import java.io.*;
  * associated with a key that an instance already contains is not a
  * structural modification.)  This is typically accomplished by
  * synchronizing on some object that naturally encapsulates the map.
+ * 不是线程安全的
  *
  * If no such object exists, the map should be "wrapped" using the
  * {@link Collections#synchronizedMap Collections.synchronizedMap}
@@ -116,6 +122,7 @@ import java.io.*;
  * tables than does using separate arrays.)  For many JRE implementations
  * and operation mixes, this class will yield better performance than
  * {@link HashMap} (which uses <i>chaining</i> rather than linear-probing).
+ * 比HashMap性能好点
  *
  * <p>This class is a member of the
  * <a href="{@docRoot}/../technotes/guides/collections/index.html">
