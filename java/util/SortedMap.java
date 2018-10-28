@@ -34,6 +34,8 @@ package java.util;
  * {@code entrySet}, {@code keySet} and {@code values} methods).
  * Several additional operations are provided to take advantage of the
  * ordering.  (This interface is the map analogue of {@link SortedSet}.)
+ * key是排序的
+ * 跟SortedSet类似
  *
  * <p>All keys inserted into a sorted map must implement the {@code Comparable}
  * interface (or be accepted by the specified comparator).  Furthermore, all
