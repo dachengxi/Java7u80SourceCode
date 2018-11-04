@@ -49,6 +49,7 @@ public abstract class Reference<T> {
      *     whether or not the instance was registered with a queue when it was
      *     created.  In the former case it also adds the instance to the
      *     pending-Reference list.  Newly-created instances are Active.
+     *     如果Reference对象创建的时候注册了queue，则会变为Pending状态，如果没有注册，则变为Inactive状态
      *
      *     Pending: An element of the pending-Reference list, waiting to be
      *     enqueued by the Reference-handler thread.  Unregistered instances
@@ -67,14 +68,21 @@ public abstract class Reference<T> {
      *     Active: queue = ReferenceQueue with which instance is registered, or
      *     ReferenceQueue.NULL if it was not registered with a queue; next =
      *     null.
+     *     如果没有注册队列，queue就是ReferenceQueue.NULL
+     *     如果注册了队列，queue就是ReferenceQueue，并且此时next = null
      *
      *     Pending: queue = ReferenceQueue with which instance is registered;
      *     next = Following instance in queue, or this if at end of list.
+     *      如果有pending列表，并且列表就这一个元素，next就指向自己
+     *      如果有多个元素，就指向下一个
      *
      *     Enqueued: queue = ReferenceQueue.ENQUEUED; next = Following instance
      *     in queue, or this if at end of list.
+     *     已入队，queue变为ReferenceQueue.ENQUEUED，入队列后就变成了头，如果原来队列没有元素，next就指向自己
+     *     如果原来队列有元素，next就指向队列中下一个元素
      *
      *     Inactive: queue = ReferenceQueue.NULL; next = this.
+     *     queue变成了ReferenceQueue.NULL，next指向自己
      *
      * With this scheme the collector need only examine the next field in order
      * to determine whether a Reference instance requires special treatment: If
