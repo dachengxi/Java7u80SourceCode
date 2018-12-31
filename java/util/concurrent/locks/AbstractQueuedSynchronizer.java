@@ -1919,13 +1919,18 @@ public abstract class AbstractQueuedSynchronizer
      * @param node the node
      * @return true if successfully transferred (else the node was
      * cancelled before signal).
-     * 将一个结点从Condition队列转换到AbstractQueuedSynchronizer队列
+     * 将一个结点从条件队列转换到阻塞队列
+     * true 代表转移成功
+     * false 代表在signal之前结点已经取消了
      */
     final boolean transferForSignal(Node node) {
         /*
          * If cannot change waitStatus, the node has been cancelled.
          */
-        // 尝试将状态从CONDITION设置为0，设置不成，说明结点已经被取消，返回false
+        /**
+         * 尝试将状态从CONDITION设置为0，设置不成，说明结点已经被取消，返回false
+         * 结点已经取消，就不需要在转移了，返回false，上层方法继续转移后面一个结点
+         */
         if (!compareAndSetWaitStatus(node, Node.CONDITION, 0))
             return false;
 
@@ -1935,12 +1940,23 @@ public abstract class AbstractQueuedSynchronizer
          * attempt to set waitStatus fails, wake up to resync (in which
          * case the waitStatus can be transiently and harmlessly wrong).
          */
-        // enq入队，入AbstractQueuedSynchronizer的队列
+        /**
+         * enq入队，入阻塞队列
+         * enq自旋进入阻塞队列的尾部
+         * 得到的结点p是node在阻塞队列的前驱结点
+         */
         Node p = enq(node);
         // 等待状态
         int ws = p.waitStatus;
-        // waitStatus状态设置为SIGNAL
+        /**
+         * waitStatus状态设置为SIGNAL
+         * ws大于0 表示node在阻塞队列中的前驱结点已经取消了等待，
+         * 可以直接唤醒node对应的线程
+         *
+         * 如果ws小于等于0，会把node的前驱结点p的ws状态设置为-1
+         */
         if (ws > 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL))
+            // 如果前驱结点取消或者CAS失败，会直接唤醒线程
             LockSupport.unpark(node.thread);
         return true;
     }
@@ -1954,7 +1970,13 @@ public abstract class AbstractQueuedSynchronizer
      * @return true if cancelled before the node was signalled
      */
     final boolean transferAfterCancelledWait(Node node) {
+        /**
+         * 如果CAS能将结点状态设置为0，说明是signal之前发生的中断
+         *
+         * 因为如果signal先发生的话，signal会将结点waitStatus设置为0
+         */
         if (compareAndSetWaitStatus(node, Node.CONDITION, 0)) {
+            // 结点放入阻塞队列
             enq(node);
             return true;
         }
@@ -1963,6 +1985,10 @@ public abstract class AbstractQueuedSynchronizer
          * until it finishes its enq().  Cancelling during an
          * incomplete transfer is both rare and transient, so just
          * spin.
+         */
+        /**
+         * 走到这里，说明CAS失败，也就是signal先将waitStatus设置为0，
+         * signal方法会将结点转移到阻塞队列，但可能还没完成，所以这边自旋等待其完成
          */
         while (!isOnSyncQueue(node))
             Thread.yield();
@@ -2153,6 +2179,8 @@ public abstract class AbstractQueuedSynchronizer
          * null. Split out from signal in part to encourage compilers
          * to inline the case of no waiters.
          * @param first (non-null) the first node on condition queue
+         *
+         * 从条件队列头往后遍历，找到第一个要转移的结点
          */
         private void doSignal(Node first) {
             do {
@@ -2230,9 +2258,12 @@ public abstract class AbstractQueuedSynchronizer
          *
          * @throws IllegalMonitorStateException if {@link #isHeldExclusively}
          *         returns {@code false}
+         *
+         * 唤醒等待时间最长的线程
+         * 也就是将结点从条件队列转移到阻塞队列中去
          */
         public final void signal() {
-            // 当前线程必须持有独占锁
+            // 当前线程必须持有当前的独占锁
             if (!isHeldExclusively())
                 throw new IllegalMonitorStateException();
             // 获取第一个结点
@@ -2298,6 +2329,9 @@ public abstract class AbstractQueuedSynchronizer
          * Checks for interrupt, returning THROW_IE if interrupted
          * before signalled, REINTERRUPT if after signalled, or
          * 0 if not interrupted.
+         * signal之前已经中断，返回THROW_IE
+         * signal之后中断，返回REINTERRUPT
+         * 没有发生中断，返回0
          */
         private int checkInterruptWhileWaiting(Node node) {
             return Thread.interrupted() ?
@@ -2348,6 +2382,12 @@ public abstract class AbstractQueuedSynchronizer
              * saveState代表release之前的state值
              */
             int savedState = fullyRelease(node);
+
+            /**
+             * REINTERRUPT = 1代表await返回的时候需要重新设置中断状态
+             * THROW_IE = -1 代表await返回的时候需要抛出异常
+             * 0 表示在await期间没有发生中断
+             */
             int interruptMode = 0;
             /**
              * 有两种情况退出循环：
@@ -2357,17 +2397,48 @@ public abstract class AbstractQueuedSynchronizer
              * 自旋，如果发现自己还没到阻塞队列中，就挂起，等待被转移到阻塞队列
              */
             while (!isOnSyncQueue(node)) {
-                // 线程挂起
+                /**
+                 * 线程挂起
+                 * 有三种情况可以让这里继续执行下去：
+                 * 1. 正常等待signal之后，才能继续往下执行
+                 * 2. 线程中断，在park的时候，另外一个线程对这个线程进行了中断
+                 * 3. 在signal的时候，转移后的前驱结点取消或者对前驱结点的CAS操作失败了
+                 *    假唤醒，和Object.wait()类似
+                 *
+                 */
                 LockSupport.park(this);
-                // 检查中断
+                /**
+                 * 检查线程是否在挂起期间发生了中断
+                 * 如果发生了中断，判断是signal之前中断的还是之后中断的
+                 */
                 if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)
                     break;
             }
-            // 被唤醒后进入阻塞队列，等待获取锁
+
+            /**
+             * 跳出while循环，走到这里
+             * 此时能确定结点已经进入阻塞队列，准备获取锁
+             *
+             * acquireQueued返回后，代表当前线程获取了所，并且state== savedState
+             * 此方法的返回值代表线程是否被中断，true表示被中断了
+             * 如果interruptMode！=THROW_IE，说明signal之前就发生了中断
+             * 将interruptMode设置为REINTERRUPT用于等会的重新中断
+             */
             if (acquireQueued(node, savedState) && interruptMode != THROW_IE)
                 interruptMode = REINTERRUPT;
+
+            /**
+             * signal的时候，会将结点转移到阻塞队列，并且node.nextWaiter = null
+             * 也就是将结点和条件队列断开
+             *
+             * 但是如果signal之前就中断了，也会将结点转移到阻塞队列，
+             * 这时候并没有设置node.nextWaiter=null的
+             *
+             * 这里会将取消的结点清除出去
+             */
             if (node.nextWaiter != null) // clean up if cancelled
                 unlinkCancelledWaiters();
+            // 处理中断状态
             if (interruptMode != 0)
                 reportInterruptAfterWait(interruptMode);
         }
