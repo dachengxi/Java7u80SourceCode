@@ -169,13 +169,17 @@ public class ReentrantLock implements Lock, java.io.Serializable {
             if (Thread.currentThread() != getExclusiveOwnerThread())
                 throw new IllegalMonitorStateException();
             boolean free = false;
-            // 持有锁数量为零，释放锁
+            /**
+             * 持有锁数量为零，释放锁
+             * c == 0说明没有嵌套锁了，可以释放
+             * 如果不等于0，说明还有嵌套锁，不能释放，只是将锁减少1
+             */
             if (c == 0) {
                 free = true;
                 // 独占设为null
                 setExclusiveOwnerThread(null);
             }
-            // 设置状态为0
+            // 设置状态为
             setState(c);
             return free;
         }
@@ -260,18 +264,35 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * Fair version of tryAcquire.  Don't grant access unless
          * recursive call or no waiters or is first.
          * 公平的尝试获取
-         * 再次获取，没有比当前等待时间更长的，或者是第一次
+         * 返回true表示：1. 没有线程在等待锁；2. 重入锁，线程本身就持有锁，可以再次直接获取
          */
         protected final boolean tryAcquire(int acquires) {
             final Thread current = Thread.currentThread();
             int c = getState();
+            // 此时没有线程持有锁
             if (c == 0) {
+                /**
+                 * 由于是公平锁，虽然此时没有线程持有锁，
+                 * 但是还要看看有没有别的线程在队列里等待
+                 */
                 if (!hasQueuedPredecessors() &&
+                    /**
+                     * 没有线程在队列中等待，使用CAS尝试获取，
+                     * 成功了就代表获取到锁，失败了表示同一时刻有线程抢先获取到了锁
+                     */
                     compareAndSetState(0, acquires)) {
+                    /**
+                     * 能走到这里，表示获取到了锁，设置当前线程是锁的持有者
+                     */
                     setExclusiveOwnerThread(current);
                     return true;
                 }
             }
+            /**
+             * 能走进这个分支，说明state不等于0，
+             * 也就是只能大于0，表示重入了，
+             * 需要将锁的计数加1
+             */
             else if (current == getExclusiveOwnerThread()) {
                 int nextc = c + acquires;
                 if (nextc < 0)
