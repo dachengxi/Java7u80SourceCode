@@ -114,6 +114,22 @@ public class ReentrantLock implements Lock, java.io.Serializable {
     private final Sync sync;
 
     /**
+     * 非公平锁和公平锁共有两处不同：
+     * 1. 非公平锁在调用lock方法后，会直接调用CAS进行抢锁
+     *    如果这个时候锁刚好没有被占用，当前线程就会直接获取到锁返回。
+     *    而公平锁则会先判断下队列中是否有在排队的线程。
+     * 2. 非公平锁在第一次CAS失败后，和公平锁一样会进入到tryAcquire方法中。
+     *    在tryAcquire方法中非公平锁同样也会直接去CAS进行抢锁，
+     *    如果刚好这时候锁没有被占用，当前线程会直接获取到锁返回。
+     *    而公平锁会判断队列中是否有线程在等待，如果有，就会排队。
+     *
+     * 如果两次CAS都不成功，则非公平锁和公平锁一样，都进入阻塞队列等待唤醒。
+     *
+     * 非公平锁性能更好，吞吐量更大，但是获取锁的时间变得不能够确定，
+     * 会导致队列中的线程可能长期出去饥饿状态
+     */
+
+    /**
      * Base of synchronization control for this lock. Subclassed
      * into fair and nonfair versions below. Uses AQS state to
      * represent the number of holds on the lock.
@@ -233,7 +249,9 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * 非公平获取锁，直接获取，失败了就回退到正常的获取
          */
         final void lock() {
-            // 直接设置状态
+            /**
+             * 和公平锁相比，这里没有判断是否有等待队列，而是直接进行CAS，如果成功就返回true
+             */
             if (compareAndSetState(0, 1))
                 // 设置当前线程为独占
                 setExclusiveOwnerThread(Thread.currentThread());
@@ -274,6 +292,9 @@ public class ReentrantLock implements Lock, java.io.Serializable {
                 /**
                  * 由于是公平锁，虽然此时没有线程持有锁，
                  * 但是还要看看有没有别的线程在队列里等待
+                 *
+                 * 和非公平锁相比，这里多了一个hasQueuedPredecessors判断
+                 * 查询是否有线程在等待
                  */
                 if (!hasQueuedPredecessors() &&
                     /**
