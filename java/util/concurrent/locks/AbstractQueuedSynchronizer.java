@@ -741,6 +741,8 @@ public abstract class AbstractQueuedSynchronizer
      * propagation. (Note: For exclusive mode, release just amounts
      * to calling unparkSuccessor of head if it needs signal.)
      * 共享模式的释放
+     *
+     * 此时state已经是0了
      */
     private void doReleaseShared() {
         /*
@@ -757,23 +759,50 @@ public abstract class AbstractQueuedSynchronizer
         for (;;) {
             // 头结点
             Node h = head;
+            /**
+             * 1. h == null 说明阻塞队列为空
+             * 2. h == tail 说明头结点可能是刚刚初始化的头结点，或者是普通的线程结点
+             *    但此结点既然是头结点，那么就说明已经被唤醒，阻塞队列没有其他结点了
+             *
+             * 上面这两种情况不需要进行唤醒后继结点
+             */
             if (h != null && h != tail) {
                 // 头结点的等待状态
                 int ws = h.waitStatus;
-                // 后继节点需要被唤醒
+                /**
+                 * 结点状态是-1，
+                 */
                 if (ws == Node.SIGNAL) {
-                    // 等待状态置为0，不成功的话重试
+                    /**
+                     * 等待状态置为0，不成功的话重试
+                     */
                     if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
                         continue;            // loop to recheck cases
-                    // 等待状态置为0之后，释放头结点
+                    /**
+                     * 唤醒head的后继结点，就是阻塞队列中的第一个结点
+                     */
                     unparkSuccessor(h);
                 }
                 // 等待状态为0，需要继续PROPAGATE到下一个结点
                 else if (ws == 0 &&
+                    /**
+                     * CAS失败的场景：执行到这里，刚好有一个结点入队，
+                     * 入队会将这个结点的ws设置为-1
+                     */
                          !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
                     continue;                // loop on failed CAS
             }
-            // h不等于head的话，表示head发生了变化，需要继续循环
+            /**
+             * 走到这里，前面唤醒的线程已经是head了，需要继续循环
+             * 如果h == head 说明head没有变化，需要退出循环
+             *
+             * 退出循环不是意味着阻塞队列中的其他结点就不继续唤醒了，
+             * 唤醒的线程之后还是会调用这个方法的
+             *
+             * h == head 说明头结点没有被刚刚用unParkSuccessor唤醒的线程占有，此时就会退出循环
+             *
+             * h != head 说明头结点被刚刚唤醒的线程占有，会继续进入下一轮循环，唤醒下一个结点
+              */
             if (h == head)                   // loop if head changed
                 break;
         }
@@ -807,6 +836,10 @@ public abstract class AbstractQueuedSynchronizer
          * unnecessary wake-ups, but only when there are multiple
          * racing acquires/releases, so most need signals now or soon
          * anyway.
+         */
+
+        /**
+         * 唤醒当前结点之后，继续马上唤醒下一个结点，然后以此类推
          */
         if (propagate > 0 || h == null || h.waitStatus < 0) {
             Node s = node.next;
@@ -891,7 +924,7 @@ public abstract class AbstractQueuedSynchronizer
         int ws = pred.waitStatus;
         /**
          * -1 signal，表示后继结点需要被唤醒
-         * 前驱结点转改正常，当前线程需要挂起，直接返回true
+         * 前驱结点状态正常，当前线程需要挂起，直接返回true
          */
         if (ws == Node.SIGNAL)
             /*
@@ -1171,7 +1204,12 @@ public abstract class AbstractQueuedSynchronizer
                 final Node p = node.predecessor();
                 // 前驱结点为头结点
                 if (p == head) {
-                    // 尝试获取
+                    /**
+                     * 调用await的时候，state肯定不为0，所以这里tryAcquireShared返回-1
+                     * 此时下面的if进不去
+                     *
+                     * 调用完countDown方法后，当state = 0时，这时候tryAcquireShared返回1，可以进入if了
+                     */
                     int r = tryAcquireShared(arg);
                     // 获取成功
                     if (r >= 0) {
@@ -1184,6 +1222,15 @@ public abstract class AbstractQueuedSynchronizer
                     }
                 }
                 // 获取失败后是否需要阻塞
+                /**
+                 * shouldParkAfterFailedAcquire 当前线程会将前驱结点的waitStatus设置为-1
+                 * 并返回true，表示当前线程需要被挂起
+                 *
+                 * parkAndCheckInterrupt 挂起当前线程
+                 *
+                 * 等待线程被唤醒之后，这边会继续执行下去，也就是再一次进入循环，
+                 * 然后会进入上面的if，执行setHeadAndPropagate方法
+                 */
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     parkAndCheckInterrupt())
                     throw new InterruptedException();
@@ -1525,7 +1572,9 @@ public abstract class AbstractQueuedSynchronizer
         // 中断
         if (Thread.interrupted())
             throw new InterruptedException();
-        // 共享模式尝试获取，不成功的话调用doAcquireSharedInterruptibly
+        /**
+         * 调用await的时候，state肯定不为0，所以这里tryAcquireShared返回-1
+         */
         if (tryAcquireShared(arg) < 0)
             doAcquireSharedInterruptibly(arg);
     }
@@ -1568,9 +1617,15 @@ public abstract class AbstractQueuedSynchronizer
      * 共享模式的释放
      */
     public final boolean releaseShared(int arg) {
-        // 共享模式尝试释放
+        /**
+         * 共享模式尝试释放
+         * 只有state减为0的时候，tryReleaseShared才会返回true
+         */
         if (tryReleaseShared(arg)) {
-            // 共享模式释放
+            /**
+             * 共享模式释放
+             * 唤醒await的线程
+             */
             doReleaseShared();
             return true;
         }

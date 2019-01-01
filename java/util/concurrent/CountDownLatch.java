@@ -183,7 +183,12 @@ public class CountDownLatch {
             return (getState() == 0) ? 1 : -1;
         }
 
-        // 共享模式尝试释放
+        /**
+         * 共享模式尝试释放
+         * 用自旋方式实现state减1
+         * @param releases
+         * @return
+         */
         protected boolean tryReleaseShared(int releases) {
             // Decrement count; signal when transition to zero
             for (;;) {
