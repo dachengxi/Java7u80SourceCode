@@ -84,19 +84,27 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
     private static final long serialVersionUID = -817911632652898426L;
 
     /** The queued items */
-    //存放元素的数组
+    /**
+     * 存放元素的数组
+     */
     final Object[] items;
 
     /** items index for next take, poll, peek or remove */
-    //获取的索引
+    /**
+     * 下一次读取操作的位置
+     */
     int takeIndex;
 
     /** items index for next put, offer, or add */
-    //添加的索引
+    /**
+     * 下一次写入操作的位置
+     */
     int putIndex;
 
     /** Number of elements in the queue */
-    //Queue中元素的数量
+    /**
+     * 队列中的元素数量
+     */
     int count;
 
     /*
@@ -105,13 +113,19 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      */
 
     /** Main lock guarding all access */
-    //锁，主锁，守护所有的访问
+    /**
+     * 锁，主锁，守护所有的访问
+     */
     final ReentrantLock lock;
     /** Condition for waiting takes */
-    //队列非空的条件，如果队列为空，获取元素的线程会调用notEmpty.await来等待队列变成非空的情况
+    /**
+     * 队列非空的条件，如果队列为空，获取元素的线程会调用notEmpty.await来等待队列变成非空的情况
+     */
     private final Condition notEmpty;
     /** Condition for waiting puts */
-    //队列非满的条件，如果队列满了，放入元素的线程会调用notFull.await来等待队列变成有空位的情况
+    /**
+     * 队列非满的条件，如果队列满了，放入元素的线程会调用notFull.await来等待队列变成有空位的情况
+     */
     private final Condition notFull;
 
     // Internal helper methods
