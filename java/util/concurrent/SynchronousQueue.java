@@ -170,12 +170,15 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
          * @param e if non-null, the item to be handed to a consumer;
          *          if null, requests that transfer return an item
          *          offered by producer.
+         *          如果不是null，表示将元素从生产者转移给消费者；
+         *          如果是null，表示消费者等待生产者提供元素
          * @param timed if this operation should timeout
          * @param nanos the timeout, in nanoseconds
          * @return if non-null, the item provided or received; if null,
          *         the operation failed due to timeout or interrupt --
          *         the caller can distinguish which of these occurred
          *         by checking Thread.interrupted.
+         *
          */
         abstract Object transfer(Object e, boolean timed, long nanos);
     }
