@@ -135,11 +135,15 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
     }
 
     /** The capacity bound, or Integer.MAX_VALUE if none */
-    //容量，默认是Integer.MAX_VALUE
+    /**
+     * 容量，默认是Integer.MAX_VALUE
+     */
     private final int capacity;
 
     /** Current number of elements */
-    //队列中包含的元素的个数
+    /**
+     * 队列中包含的元素的个数
+     */
     private final AtomicInteger count = new AtomicInteger(0);
 
     /**
@@ -157,19 +161,27 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
     private transient Node<E> last;
 
     /** Lock held by take, poll, etc */
-    //获取锁
+    /**
+     * 读操作需要获取的锁
+     */
     private final ReentrantLock takeLock = new ReentrantLock();
 
     /** Wait queue for waiting takes */
-    //不为空的条件
+    /**
+     * 读操作的时候队列是空的，需要等待notEmpty条件
+     */
     private final Condition notEmpty = takeLock.newCondition();
 
     /** Lock held by put, offer, etc */
-    //放入锁
+    /**
+     * 写操作需要获取的锁
+     */
     private final ReentrantLock putLock = new ReentrantLock();
 
     /** Wait queue for waiting puts */
-    //不为满的条件
+    /**
+     * 写操作的时候队列是满的，需要等待notFull条件
+     */
     private final Condition notFull = putLock.newCondition();
 
     /**
@@ -355,18 +367,18 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
      * 添加元素到队尾，队列满的时候需要阻塞等待队列不满
      */
     public void put(E e) throws InterruptedException {
-        //放入的元素不能为null
+        // 放入的元素不能为null
         if (e == null) throw new NullPointerException();
         // Note: convention in all put/take/etc is to preset local var
         // holding count negative to indicate failure unless set.
         int c = -1;
-        //构建结点
+        // 构建结点
         Node<E> node = new Node(e);
-        //写锁
+        // 写锁
         final ReentrantLock putLock = this.putLock;
-        //添加前，元素总数
+        // 添加前，元素总数
         final AtomicInteger count = this.count;
-        //加锁，可中断
+        // 加锁，可中断
         putLock.lockInterruptibly();
         try {
             /*
@@ -377,22 +389,29 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
              * signalled if it ever changes from capacity. Similarly
              * for all other uses of count in other wait guards.
              */
-            //队列满了，需要等待队列不满
+            // 队列满了，需要等待队列不满notFull条件
             while (count.get() == capacity) {
                 notFull.await();
             }
-            //队列不满，结点入队列
+            // 队列不满，结点入队列
             enqueue(node);
-            //元素总数增加
+            // 元素总数增加
             c = count.getAndIncrement();
-            //唤醒等待不满条件的线程
+            /**
+             * 如果这个元素入队后，还有至少一个槽可以使用，
+             * 调用notFull.signal唤醒等待线程
+              */
             if (c + 1 < capacity)
                 notFull.signal();
         } finally {
-            //解锁
+            // 解锁
             putLock.unlock();
         }
-        //原先队列为空，上面已经添加元素了，现在队列不为空，需要唤醒等待不为空的线程
+        /**
+         * c == 0说明队列在这个元素入队之前是空的
+         * 所有读线程都在等待 notEmpty 这个条件
+         * 所以这里做一次唤醒操作
+         */
         if (c == 0)
             signalNotEmpty();
     }
@@ -487,17 +506,26 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
         final ReentrantLock takeLock = this.takeLock;
         takeLock.lockInterruptibly();
         try {
-            //队列为空，阻塞
+            // 队列为空，阻塞，等待notEmpty条件
             while (count.get() == 0) {
                 notEmpty.await();
             }
             x = dequeue();
             c = count.getAndDecrement();
+            /**
+             * 出队之后，队列中至少还有一个元素
+             * 唤醒其他的读线程
+             */
             if (c > 1)
                 notEmpty.signal();
         } finally {
             takeLock.unlock();
         }
+
+        /**
+         * c == capacity 说明take的时候，队列是满的
+         * 出队一个之后，此时队列不满，需要唤醒写线程
+         */
         if (c == capacity)
             signalNotFull();
         return x;
