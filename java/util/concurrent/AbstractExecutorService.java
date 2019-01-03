@@ -139,6 +139,7 @@ public abstract class AbstractExecutorService implements ExecutorService {
 
     /**
      * the main mechanics of invokeAny.
+     * 将tasks中的任务提交到线程池执行，任意一个线程执行完成就可以结束
      */
     private <T> T doInvokeAny(Collection<? extends Callable<T>> tasks,
                             boolean timed, long nanos)
@@ -149,6 +150,10 @@ public abstract class AbstractExecutorService implements ExecutorService {
         if (ntasks == 0)
             throw new IllegalArgumentException();
         List<Future<T>> futures= new ArrayList<Future<T>>(ntasks);
+        /**
+         * ExecutorCompletionService不是真正的执行器，参数this才是真正的执行器
+         * 它对执行器进行了包装，每个任务结束后，将结果保存到内部的一个completionQueue队列中
+         */
         ExecutorCompletionService<T> ecs =
             new ExecutorCompletionService<T>(this);
 
@@ -166,34 +171,62 @@ public abstract class AbstractExecutorService implements ExecutorService {
             Iterator<? extends Callable<T>> it = tasks.iterator();
 
             // Start one task for sure; the rest incrementally
+            // 先提交一个任务
             futures.add(ecs.submit(it.next()));
+            // 任务数减1
             --ntasks;
+            // 正在执行的任务数
             int active = 1;
 
             for (;;) {
                 Future<T> f = ecs.poll();
+                /**
+                 * f为nll表示保存执行完成结果的队列为空
+                 * 也就是刚才提交的第一个线程还没有执行完成
+                 */
                 if (f == null) {
                     if (ntasks > 0) {
                         --ntasks;
                         futures.add(ecs.submit(it.next()));
                         ++active;
                     }
+                    // active == 0 说明所有的任务都执行失败
                     else if (active == 0)
                         break;
                     else if (timed) {
+                        // 带等待的poll方法
                         f = ecs.poll(nanos, TimeUnit.NANOSECONDS);
+                        // 已经超时，抛异常
                         if (f == null)
                             throw new TimeoutException();
                         long now = System.nanoTime();
                         nanos -= now - lastTime;
                         lastTime = now;
                     }
+                    /**
+                     * 这里说明没有任务需要提交，但是线程池中的任务没有完成，也没有超时
+                     * take会阻塞，直到有元素返回
+                     */
                     else
                         f = ecs.take();
                 }
+
+                /**
+                 * 假设在这个循环中，每一个任务都没那么快结束，每一次循环都会进入上面的
+                 * 第一个分支，进行任务提交，直到所有的任务都提交。
+                 *
+                 * 任务都提交完成后，如果设置了超时，for循环其实进入了一直检测是否超时这个分支
+                 *
+                 * 如果没有设置超时机制，就会阻塞在ecs.take()方法上，等待获取第一个执行结果
+                 *
+                 * 如果所有任务都执行失败，会从active == 0分支出去
+                 */
+
+                // 有任务结束了
                 if (f != null) {
                     --active;
                     try {
+                        // 返回执行结果
                         return f.get();
                     } catch (ExecutionException eex) {
                         ee = eex;
@@ -208,6 +241,7 @@ public abstract class AbstractExecutorService implements ExecutorService {
             throw ee;
 
         } finally {
+            // 方法完成之前，需要取消其他的任务
             for (Future<T> f : futures)
                 f.cancel(true);
         }
@@ -229,6 +263,13 @@ public abstract class AbstractExecutorService implements ExecutorService {
         return doInvokeAny(tasks, true, unit.toNanos(timeout));
     }
 
+    /**
+     * 执行所有任务，返回任务结果
+     * @param tasks the collection of tasks
+     * @param <T>
+     * @return
+     * @throws InterruptedException
+     */
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
         throws InterruptedException {
         if (tasks == null)
