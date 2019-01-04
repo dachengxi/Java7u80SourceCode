@@ -972,21 +972,40 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                 if (wc >= CAPACITY ||
                     wc >= (core ? corePoolSize : maximumPoolSize))
                     return false;
+                /**
+                 * 如果成功了，说明所有创建线程前的条件校验都满足了，准备创建线程执行任务
+                 * 如果失败了，说明有其他线程也在尝试往线程中创建线程
+                 */
                 if (compareAndIncrementWorkerCount(c))
                     break retry;
+                // 有并发，需要重新读一下ctl
                 c = ctl.get();  // Re-read ctl
+                /**
+                 * 如果正常的cas失败，进到下一个里层的for循环就可以了
+                 * 如果是因为其他线程的操作，导致了线程池状态发生了变化
+                 * 需要回到外层for循环
+                 */
                 if (runStateOf(c) != rs)
                     continue retry;
                 // else CAS failed due to workerCount change; retry inner loop
             }
         }
 
+        /**
+         * 能走到这里，说明可以开始创建线程来执行任务了
+         */
+
+        // worker是否已经启动
         boolean workerStarted = false;
+        // 是否已经将这个worker添加到workers这个HashSet中
         boolean workerAdded = false;
         Worker w = null;
         try {
             final ReentrantLock mainLock = this.mainLock;
             w = new Worker(firstTask);
+            /**
+             * worker的构造方法会调用ThreadFactory创建一个新的线程
+             */
             final Thread t = w.thread;
             if (t != null) {
                 mainLock.lock();
@@ -997,12 +1016,20 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                     int c = ctl.get();
                     int rs = runStateOf(c);
 
+                    /**
+                     * 小于SHUTDOOWN的是RUNNING
+                     * 等于SHUTDOWN，不接受新任务，会继续执行等待队列中的任务
+                     */
                     if (rs < SHUTDOWN ||
                         (rs == SHUTDOWN && firstTask == null)) {
                         if (t.isAlive()) // precheck that t is startable
                             throw new IllegalThreadStateException();
+                        // 加到woekers中
                         workers.add(w);
                         int s = workers.size();
+                        /**
+                         * 用于记录workers中的个数的最大值
+                         */
                         if (s > largestPoolSize)
                             largestPoolSize = s;
                         workerAdded = true;
@@ -1010,12 +1037,17 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                 } finally {
                     mainLock.unlock();
                 }
+                // 添加成功，启动这个线程
                 if (workerAdded) {
                     t.start();
                     workerStarted = true;
                 }
             }
         } finally {
+            /**
+             * 如果线程没有启动，需要做一些清理工作
+             * 比如前面workCount加了1，需要减去1
+             */
             if (! workerStarted)
                 addWorkerFailed(w);
         }
@@ -1184,6 +1216,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * user code.
      *
      * @param w the worker
+     *
+     *          worker线程启动后调用
+     *          while循环不断地从等待队列中获取任务并执行
      */
     final void runWorker(Worker w) {
         Thread wt = Thread.currentThread();
@@ -1198,6 +1233,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                 // if not, ensure thread is not interrupted.  This
                 // requires a recheck in second case to deal with
                 // shutdownNow race while clearing interrupt
+                /**
+                 * 如果线程池状态大于等于STOP，当前线程也需要终端
+                 */
                 if ((runStateAtLeast(ctl.get(), STOP) ||
                      (Thread.interrupted() &&
                       runStateAtLeast(ctl.get(), STOP))) &&
@@ -2128,6 +2166,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * directly in the calling thread of the {@code execute} method,
      * unless the executor has been shut down, in which case the task
      * is discarded.
+     * 只要线程池没有被关闭，就由提交任务的线程自己来执行这个任务
      */
     public static class CallerRunsPolicy implements RejectedExecutionHandler {
         /**
@@ -2152,6 +2191,8 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
     /**
      * A handler for rejected tasks that throws a
      * {@code RejectedExecutionException}.
+     * 直接抛出RejectedExecutionException异常
+     * 默认策略
      */
     public static class AbortPolicy implements RejectedExecutionHandler {
         /**
@@ -2176,6 +2217,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
     /**
      * A handler for rejected tasks that silently discards the
      * rejected task.
+     * 不作处理，直接抛弃任务
      */
     public static class DiscardPolicy implements RejectedExecutionHandler {
         /**
@@ -2197,6 +2239,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * A handler for rejected tasks that discards the oldest unhandled
      * request and then retries {@code execute}, unless the executor
      * is shut down, in which case the task is discarded.
+     * 把队列头的任务直接扔掉，然后提交这个任务到等待队列中
      */
     public static class DiscardOldestPolicy implements RejectedExecutionHandler {
         /**

@@ -84,6 +84,13 @@ public class Executors {
      * @param nThreads the number of threads in the pool
      * @return the newly created thread pool
      * @throws IllegalArgumentException if {@code nThreads <= 0}
+     * 生成一个固定大小的线程池
+     * 最大线程数和核心线程数相等
+     * keepAliveTime为0，设置为其他数字也没意义，线程池不会回收corePoolSize内的线程
+     * LinkedBlockingQueue无界队列
+     *
+     * 刚开始，每提交一个任务都会创建一个worker，当worker的数量到达nThreads后，
+     * 不再创建新的线程，而是提交到LinkedBlockingQueue中，之后的线程数始终为nThreads
      */
     public static ExecutorService newFixedThreadPool(int nThreads) {
         return new ThreadPoolExecutor(nThreads, nThreads,
@@ -129,6 +136,7 @@ public class Executors {
      * guaranteed not to be reconfigurable to use additional threads.
      *
      * @return the newly created single-threaded Executor
+     * 生成一个只有一个线程的固定线程池
      */
     public static ExecutorService newSingleThreadExecutor() {
         return new FinalizableDelegatedExecutorService
@@ -174,6 +182,17 @@ public class Executors {
      * may be created using {@link ThreadPoolExecutor} constructors.
      *
      * @return the newly created thread pool
+     * 需要的时候就创建新线程，可以复用之前创建的线程，如果这个线程没有任务的话
+     *
+     * corePoolSize为0
+     * maximumPoolSize为最大
+     * keepAliveTime为60s
+     * 队列为SynchronousQueue
+     *
+     * 这种线程池对于任务可以比较快速完成的情况有比较好的性能。
+     * keepAliveTime为60s，如果线程空闲了60s没有任务，就关闭此线程并从线程池中移除
+     *
+     * 所以线程池空闲了很长时间也不会有问题，所有的线程都会被关闭，不会占用任何资源
      */
     public static ExecutorService newCachedThreadPool() {
         return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
