@@ -333,12 +333,14 @@ public class HashMap<K,V>
      */
     private void inflateTable(int toSize) {
         // Find a power of 2 >= toSize
+        // 保证数组大小是2的n次方
         int capacity = roundUpToPowerOf2(toSize);
 
+        // 计算扩容的阈值
         threshold = (int) Math.min(capacity * loadFactor, MAXIMUM_CAPACITY + 1);
-        //创建一个新的容量的表
+        // 初始化一个新的数组
         table = new Entry[capacity];
-        //初始化哈希掩码
+        // 初始化哈希掩码
         initHashSeedAsNeeded(capacity);
     }
 
@@ -443,11 +445,11 @@ public class HashMap<K,V>
      */
     public V get(Object key) {
         if (key == null)
-            //获取null作为键的
+            // 获取null作为键的
             return getForNullKey();
-        //获取非null作为键的Entry
+        // 获取非null作为键的Entry
         Entry<K,V> entry = getEntry(key);
-        //返回Entry中的value
+        // 返回Entry中的value
         return null == entry ? null : entry.getValue();
     }
 
@@ -464,7 +466,7 @@ public class HashMap<K,V>
         if (size == 0) {
             return null;
         }
-        //null作为键的Entry总是位于数组的第一个位置
+        // null作为键的Entry总是位于数组的第一个位置
         for (Entry<K,V> e = table[0]; e != null; e = e.next) {
             if (e.key == null)
                 return e.value;
@@ -495,14 +497,14 @@ public class HashMap<K,V>
         if (size == 0) {
             return null;
         }
-        //先做哈希
+        // 先做哈希
         int hash = (key == null) ? 0 : hash(key);
-        //根据哈希找到数组的索引
+        // 根据哈希找到数组的索引
         for (Entry<K,V> e = table[indexFor(hash, table.length)];
              e != null;
              e = e.next) {
             Object k;
-            //找到数组索引之后，去当前数组中查找key对应的Entry，key==e.key，key.equals(e.key)
+            // 找到数组索引之后，去当前数组中查找key对应的Entry，key==e.key，key.equals(e.key)
             if (e.hash == hash &&
                 ((k = e.key) == key || (key != null && key.equals(k))))
                 return e;
@@ -527,22 +529,26 @@ public class HashMap<K,V>
      *    不为null，就经过hash查找等工作，如果存在，就覆盖，不存在，就新建Entry
      */
     public V put(K key, V value) {
-        //表为空，先扩容
+        // 插入第一个元素，先初始化数组大小
         if (table == EMPTY_TABLE) {
             inflateTable(threshold);
         }
-        //null作为key
+        // null作为key，会放到table[0]中
         if (key == null)
             return putForNullKey(value);
-        //不是null作为key
-        //先获取key的哈希值
+        // 先获取key的哈希值
         int hash = hash(key);
-        //根据哈希找到在数组中的位置
+        // 根据哈希找到在数组中的位置
         int i = indexFor(hash, table.length);
-        //遍历当前数组位置中的元素
+        /**
+         * 遍历当前数组位置中的元素
+         * 看是否有重复的key存在，
+         * 如果有重复，直接覆盖，返回旧值。
+         * 如果没有，就添加新的Entry到链表中
+         */
         for (Entry<K,V> e = table[i]; e != null; e = e.next) {
             Object k;
-            //已经存在，替换原来的值，返回原来的值
+            // 已经存在，替换原来的值，返回原来的值
             if (e.hash == hash && ((k = e.key) == key || key.equals(k))) {
                 V oldValue = e.value;
                 e.value = value;
@@ -551,10 +557,10 @@ public class HashMap<K,V>
             }
         }
 
-        //新的key在map中不存在
-        //这时修改，就相当于结构发生了变化，需要记录
+        // 新的key在map中不存在
+        // 这时修改，就相当于结构发生了变化，需要记录
         modCount++;
-        //添加新的Entry
+        // 添加新的Entry到链表的表头
         addEntry(hash, key, value, i);
         return null;
     }
@@ -626,29 +632,33 @@ public class HashMap<K,V>
      * resize the map, but sets threshold to Integer.MAX_VALUE.
      * This has the effect of preventing future calls.
      *
-     * 重新设置大小
+     * 扩容，扩容后大小为原来的2倍
      * @param newCapacity the new capacity, MUST be a power of two;
      *        must be greater than current capacity unless current
      *        capacity is MAXIMUM_CAPACITY (in which case value
      *        is irrelevant).
      */
     void resize(int newCapacity) {
-        //原来的数组
+        // 原来的数组
         Entry[] oldTable = table;
-        //原来的容量
+        // 原来的容量
         int oldCapacity = oldTable.length;
-        //原来的容量达到最大容量
+        // 原来的容量达到最大容量
         if (oldCapacity == MAXIMUM_CAPACITY) {
             threshold = Integer.MAX_VALUE;
             return;
         }
-        //新的数组
+        // 新的数组
         Entry[] newTable = new Entry[newCapacity];
-        //原来的数组的数据放到新的数组中去，重新初始化hash掩码
+        /**
+         * 原来的数组的数据放到新的数组中去，重新初始化hash掩码
+         * 迁移过程中，会将原来table[i]中的链表的所有节点，
+         * 分拆到新的数组的newTable[i]和newTable[i + oldLength]位置上
+         */
         transfer(newTable, initHashSeedAsNeeded(newCapacity));
-        //指向新的数组
+        // 指向新的数组
         table = newTable;
-        //重新计算阈值
+        // 重新计算阈值
         threshold = (int)Math.min(newCapacity * loadFactor, MAXIMUM_CAPACITY + 1);
     }
 
@@ -657,17 +667,17 @@ public class HashMap<K,V>
      * 把旧表中的数据传输到新表中
      */
     void transfer(Entry[] newTable, boolean rehash) {
-        //新的容量
+        // 新的容量
         int newCapacity = newTable.length;
-        //循环数组
+        // 循环数组
         for (Entry<K,V> e : table) {
             while(null != e) {
                 Entry<K,V> next = e.next;
-                //需要重新hash的话，就获取新的哈希值
+                // 需要重新hash的话，就获取新的哈希值
                 if (rehash) {
                     e.hash = null == e.key ? 0 : hash(e.key);
                 }
-                //获取到应该存储到数组的哪个位置
+                // 获取到应该存储到数组的哪个位置
                 int i = indexFor(e.hash, newCapacity);
                 e.next = newTable[i];
                 newTable[i] = e;
@@ -973,18 +983,19 @@ public class HashMap<K,V>
      * 指定hash，key，value，添加到的数组索引为bucketIndex的位置上
      */
     void addEntry(int hash, K key, V value, int bucketIndex) {
-        //map的大小大于或者等于阈值的时候
-        //并且指定的index存在
-        //需要扩容
+        /**
+         * 如果大小已经到达了阈值，并且要插入的位置已经有元素了
+         * 需要进行扩容操作
+         */
         if ((size >= threshold) && (null != table[bucketIndex])) {
-            //改变容量，2倍大小
+            // 扩容，2倍大小
             resize(2 * table.length);
-            //重新计算哈希，key为null的时候hash值为0
+            // 重新计算哈希，key为null的时候hash值为0
             hash = (null != key) ? hash(key) : 0;
-            //添加Entry的数组索引值
+            // 重新计算扩容后新的下标
             bucketIndex = indexFor(hash, table.length);
         }
-        //map的大小比阈值小，不需要扩容，直接添加
+        // 添加元素到链表中
         createEntry(hash, key, value, bucketIndex);
     }
 
@@ -995,20 +1006,23 @@ public class HashMap<K,V>
      *
      * Subclass overrides this to alter the behavior of HashMap(Map),
      * clone, and readObject.
-     * 新建一个Entry
+     *  将新值放到链表的表头
+     *  然后size++
      */
     void createEntry(int hash, K key, V value, int bucketIndex) {
-        //找到数组中bucketIndex位置的Entry
+        // 找到数组中bucketIndex位置的Entry
         Entry<K,V> e = table[bucketIndex];
-        //在最靠近头的这个位置添加，原来的都排在新加的后面
+        // 在最靠近头的这个位置添加，原来的都排在新加的后面
         table[bucketIndex] = new Entry<>(hash, key, value, e);
-        //容量加1
+        // 容量加1
         size++;
     }
 
-    //迭代器
-    //如果结构发生了变化，迭代的时候会抛异常
-    //但是使用迭代器的remove可以安全删除
+    /**
+     * 如果结构发生了变化，迭代的时候会抛异常
+     * 但是使用迭代器的remove可以安全删除
+     * @param <E>
+     */
     private abstract class HashIterator<E> implements Iterator<E> {
         Entry<K,V> next;        // next entry to return
         int expectedModCount;   // For fast-fail
