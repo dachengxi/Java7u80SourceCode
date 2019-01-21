@@ -156,6 +156,7 @@ public interface ExecutorService extends Executor {
      *         java.lang.RuntimePermission}<tt>("modifyThread")</tt>,
      *         or the security manager's <tt>checkAccess</tt> method
      *         denies access.
+     * 关闭线程池，已经提交的任务继续执行，不再接受新的任务提交
      */
     void shutdown();
 
@@ -181,6 +182,7 @@ public interface ExecutorService extends Executor {
      *         java.lang.RuntimePermission}<tt>("modifyThread")</tt>,
      *         or the security manager's <tt>checkAccess</tt> method
      *         denies access.
+     * 关闭线程池，尝试停止正在执行的所有任务，不接受新的任务提交
      */
     List<Runnable> shutdownNow();
 
@@ -188,6 +190,7 @@ public interface ExecutorService extends Executor {
      * Returns <tt>true</tt> if this executor has been shut down.
      *
      * @return <tt>true</tt> if this executor has been shut down
+     * 线程池是否已关闭
      */
     boolean isShutdown();
 
@@ -197,6 +200,8 @@ public interface ExecutorService extends Executor {
      * either <tt>shutdown</tt> or <tt>shutdownNow</tt> was called first.
      *
      * @return <tt>true</tt> if all tasks have completed following shut down
+     * 如果调用了shutdown()或shutdownNow()方法后，所有任务都结束了，则返回true
+     * 这个方法必须在调用shutdown或者shutdownNow之后才会返回true
      */
     boolean isTerminated();
 
@@ -210,6 +215,8 @@ public interface ExecutorService extends Executor {
      * @return <tt>true</tt> if this executor terminated and
      *         <tt>false</tt> if the timeout elapsed before termination
      * @throws InterruptedException if interrupted while waiting
+     * 等待所有任务完成
+     * 可以设置超时时间
      */
     boolean awaitTermination(long timeout, TimeUnit unit)
         throws InterruptedException;
@@ -236,6 +243,7 @@ public interface ExecutorService extends Executor {
      * @throws RejectedExecutionException if the task cannot be
      *         scheduled for execution
      * @throws NullPointerException if the task is null
+     * 提交一个Callable任务
      */
     <T> Future<T> submit(Callable<T> task);
 
@@ -250,6 +258,8 @@ public interface ExecutorService extends Executor {
      * @throws RejectedExecutionException if the task cannot be
      *         scheduled for execution
      * @throws NullPointerException if the task is null
+     * 提交一个Runnable任务
+     * 第二个参数将会放到Future中作为返回值
      */
     <T> Future<T> submit(Runnable task, T result);
 
@@ -263,6 +273,7 @@ public interface ExecutorService extends Executor {
      * @throws RejectedExecutionException if the task cannot be
      *         scheduled for execution
      * @throws NullPointerException if the task is null
+     * 提交一个Runnable任务
      */
     Future<?> submit(Runnable task);
 
@@ -285,6 +296,7 @@ public interface ExecutorService extends Executor {
      * @throws NullPointerException if tasks or any of its elements are <tt>null</tt>
      * @throws RejectedExecutionException if any task cannot be
      *         scheduled for execution
+     * 执行所有任务，返回Future列表
      */
 
     <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
@@ -316,6 +328,7 @@ public interface ExecutorService extends Executor {
      *         unit are <tt>null</tt>
      * @throws RejectedExecutionException if any task cannot be scheduled
      *         for execution
+     * 执行所有任务，可以设置超时时间
      */
     <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
                                   long timeout, TimeUnit unit)
@@ -338,6 +351,8 @@ public interface ExecutorService extends Executor {
      * @throws ExecutionException if no task successfully completes
      * @throws RejectedExecutionException if tasks cannot be scheduled
      *         for execution
+     * 只要有一个任务完成，就可以返回
+     * 返回执行完成的任务的结果
      */
     <T> T invokeAny(Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException;
@@ -363,6 +378,8 @@ public interface ExecutorService extends Executor {
      * @throws ExecutionException if no task successfully completes
      * @throws RejectedExecutionException if tasks cannot be scheduled
      *         for execution
+     * 只要有一个任务完成，就可以返回
+     * 带超时时间
      */
     <T> T invokeAny(Collection<? extends Callable<T>> tasks,
                     long timeout, TimeUnit unit)

@@ -81,6 +81,7 @@ public abstract class AbstractExecutorService implements ExecutorService {
      * the given value as its result and provide for cancellation of
      * the underlying task.
      * @since 1.6
+     * 将任务包装成FutureTask
      */
     protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
         return new FutureTask<T>(runnable, value);
@@ -106,7 +107,9 @@ public abstract class AbstractExecutorService implements ExecutorService {
      */
     public Future<?> submit(Runnable task) {
         if (task == null) throw new NullPointerException();
+        // 将任务包装成FutureTask
         RunnableFuture<Void> ftask = newTaskFor(task, null);
+        // 执行task，具体由子类实现
         execute(ftask);
         return ftask;
     }
@@ -117,7 +120,9 @@ public abstract class AbstractExecutorService implements ExecutorService {
      */
     public <T> Future<T> submit(Runnable task, T result) {
         if (task == null) throw new NullPointerException();
+        // 将任务包装成FutureTask
         RunnableFuture<T> ftask = newTaskFor(task, result);
+        // 执行task，具体由子类实现
         execute(ftask);
         return ftask;
     }
@@ -171,7 +176,7 @@ public abstract class AbstractExecutorService implements ExecutorService {
             Iterator<? extends Callable<T>> it = tasks.iterator();
 
             // Start one task for sure; the rest incrementally
-            // 先提交一个任务
+            // 先提交一个任务，后面的任务到下面的for循环一个一个提交
             futures.add(ecs.submit(it.next()));
             // 任务数减1
             --ntasks;
@@ -278,8 +283,10 @@ public abstract class AbstractExecutorService implements ExecutorService {
         boolean done = false;
         try {
             for (Callable<T> t : tasks) {
+                // 包装成FutureTask
                 RunnableFuture<T> f = newTaskFor(t);
                 futures.add(f);
+                // 提交任务
                 execute(f);
             }
             for (Future<T> f : futures) {
